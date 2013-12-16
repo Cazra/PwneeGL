@@ -42,7 +42,7 @@ public class Shapes {
 
 
   /** Produces a 2-unit cube. */
-  public static Poly3f makeCube(int color) {
+  public static Poly3f makeCube() {
     
     // Create all the vertices.
     Vertex3f[] vertices = new Vertex3f[] {
@@ -86,45 +86,45 @@ public class Shapes {
     // set the colors for vertices on each side of the cube. 
     // top
     int green = 0xFF00FF00;
-    vertices[0].setColor(green);
-    vertices[1].setColor(green);
-    vertices[2].setColor(green);
-    vertices[3].setColor(green);
+    vertices[0].setColor(green, true);
+    vertices[1].setColor(green, true);
+    vertices[2].setColor(green, true);
+    vertices[3].setColor(green, true);
     
     // bottom
     int orange = 0xFFFF8800;
-    vertices[4].setColor(orange);
-    vertices[5].setColor(orange);
-    vertices[6].setColor(orange);
-    vertices[7].setColor(orange);
+    vertices[4].setColor(orange, true);
+    vertices[5].setColor(orange, true);
+    vertices[6].setColor(orange, true);
+    vertices[7].setColor(orange, true);
     
     // front
     int red = 0xFFFF0000;
-    vertices[8].setColor(red);
-    vertices[9].setColor(red);
-    vertices[10].setColor(red);
-    vertices[11].setColor(red);
+    vertices[8].setColor(red, true);
+    vertices[9].setColor(red, true);
+    vertices[10].setColor(red, true);
+    vertices[11].setColor(red, true);
     
     // back
     int yellow = 0xFFFFFF00;
-    vertices[12].setColor(yellow);
-    vertices[13].setColor(yellow);
-    vertices[14].setColor(yellow);
-    vertices[15].setColor(yellow);
+    vertices[12].setColor(yellow, true);
+    vertices[13].setColor(yellow, true);
+    vertices[14].setColor(yellow, true);
+    vertices[15].setColor(yellow, true);
     
     // left
     int blue = 0xFF0000FF;
-    vertices[16].setColor(blue);
-    vertices[17].setColor(blue);
-    vertices[18].setColor(blue);
-    vertices[19].setColor(blue);
+    vertices[16].setColor(blue, true);
+    vertices[17].setColor(blue, true);
+    vertices[18].setColor(blue, true);
+    vertices[19].setColor(blue, true);
     
     // right
     int magenta = 0xFFFF00FF;
-    vertices[20].setColor(magenta);
-    vertices[21].setColor(magenta);
-    vertices[22].setColor(magenta);
-    vertices[23].setColor(magenta);
+    vertices[20].setColor(magenta, true);
+    vertices[21].setColor(magenta, true);
+    vertices[22].setColor(magenta, true);
+    vertices[23].setColor(magenta, true);
     
     
     // Set the surface normals for vertices on each side of the cube.
@@ -198,9 +198,7 @@ public class Shapes {
     
     
     // Create the polygon and its faces.
-    Material material = new Material(color);
-    material.setSpecular(0f, 0f, 0f, 0f);
-    Poly3f result = new Poly3f(vertices, material);
+    Poly3f result = new Poly3f(vertices);
     result.addFace(0, 1, 2, 3);
     result.addFace(4, 5, 6, 7);
     result.addFace(8, 9, 10, 11);

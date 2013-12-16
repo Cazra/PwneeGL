@@ -24,10 +24,15 @@ import pwneegl.light.LightDirectional;
 import pwneegl.light.LightPoint;
 import pwneegl.light.LightSpot;
 import pwneegl.math.PwneeMath;
+import pwneegl.shader.ShaderLibrary;
 import pwneegl.shader.ShaderProgram;
 
 
-/** Displays a simple rotating cube with keyboard controls. */
+/** 
+ * Displays a simple rotating cube with keyboard controls. 
+ * Right now though this example is more like a playground to test things I've
+ * been implementing into the framework.
+ */
 public class SimpleScene extends GameCanvas {
   
   private float cubeAngleX = 0f;
@@ -47,14 +52,9 @@ public class SimpleScene extends GameCanvas {
   
   private Fog fog;
   
-  private ShaderProgram shader;
-  
-  
   //////// Shader-specific vars
   
   private float time;
-  
-  private float blend;
   
   /** Creates the GameCanvas with the desired framerate. */
   public SimpleScene(int fps) {
@@ -93,8 +93,10 @@ public class SimpleScene extends GameCanvas {
     GL2 gl = drawable.getGL().getGL2();
     
     // Use our shader program.
-    shader = new ShaderProgram(gl, "perFragmentPhongVShader.glsl", "perFragmentPhongFShader.glsl", true);
-    shader.useProgram(gl);
+    //shader = new ShaderProgram(gl, "perFragmentPhongVShader.glsl", "perFragmentPhongFShader.glsl", true);
+    //shader.useProgram(gl);
+    ShaderLibrary.put("shader", new ShaderProgram(gl, "perFragmentPhongVShader.glsl", "perFragmentPhongFShader.glsl", true));
+    ShaderLibrary.use(gl, "shader");
   }
   
   
@@ -146,11 +148,10 @@ public class SimpleScene extends GameCanvas {
     gl.glClearColor(0f, 0f, 0.5f, 1f);
     super.render(drawable);
     
+    ShaderProgram shader = ShaderLibrary.get();
+    
     int shader_time = shader.getUniform(gl, "time");
     gl.glUniform1f(shader_time, time);
-  
-  //  int shader_blend = shader.getUniform(gl, "blend");
-  //  gl.glUniform1f(shader_blend, blend);
     
     gl.glLoadIdentity(); // reset the model-view matrix.
     

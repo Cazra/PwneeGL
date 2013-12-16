@@ -16,6 +16,7 @@ import pwneegl.geom.Poly3f;
 import pwneegl.geom.Shapes;
 import pwneegl.geom.Vertex3f;
 import pwneegl.material.Material;
+import pwneegl.material.MaterialLibrary;
 import pwneegl.material.TexturedMaterial;
 import pwneegl.sprite.Sprite3f;
 
@@ -23,31 +24,35 @@ import pwneegl.sprite.Sprite3f;
 /** A sprite for a simple test cube. */
 public class TestCube extends Sprite3f {
   
-  private static Poly3f shape = Shapes.makeCube(0xFF0000); // Shapes.makeSphere(20, 20, 0xFFFF0000); // Shapes.makeCube(0xFF0000); // Shapes.makeRect(4f, 3f, 0xFF0000); // Shapes.makeCylinder(20, 0xFF0000);
-  
-  private static Material material = null;
+  private static Poly3f shape = Shapes.makeCube(); // Shapes.makeSphere(20, 20, 0xFFFF0000); // Shapes.makeCube(0xFF0000); // Shapes.makeRect(4f, 3f, 0xFF0000); // Shapes.makeCylinder(20, 0xFF0000);
   
   public TestCube(float x, float y, float z) {
     super(x, y, z);
     
-    if(material == null) {
+    if(!MaterialLibrary.contains("testCube")) {
       initMaterial();
     }
-    shape.material = material;
+    //shape.material = material;
   }
   
   private void initMaterial() {
-    material = new TexturedMaterial("sampleTex.png", true);
-    material.setShininess(100f);
-    material.setSpecular(1f, 1f, 0f, 1f);
-    material.setEmission(0f, 0.5f, 0.5f, 1f);
+    Material m = new TexturedMaterial("sampleTex.png", true, GL_TEXTURE0);
+    m.setShininess(100f);
+    m.setSpecular(1f, 1f, 0f, 1f);
+    m.setEmission(0f, 0.5f, 0.5f, 1f);
+    MaterialLibrary.put("testCube", m);
+    
+    Material bump = new TexturedMaterial("sampleTexBump.png", true, GL_TEXTURE1);
+    MaterialLibrary.put("testCubeBump", bump);
   }
   
   
   @Override
   public void draw(GL2 gl) {
     
-  //  material.glMaterial(gl);
+    MaterialLibrary.use(gl, "testCube", "texMap");
+    MaterialLibrary.use(gl, "testCubeBump", "bumpMap");
+    
     gl.glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     shape.renderVBO(gl);
   }

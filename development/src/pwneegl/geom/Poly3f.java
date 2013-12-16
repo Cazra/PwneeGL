@@ -48,8 +48,8 @@ import com.jogamp.common.nio.Buffers;
 import pwneegl.material.Material;
 
 /** 
- * A polyhedral comprised of 1 or more Face3f's. 
- * Also contains texture information for those faces. 
+ * A polyhedral comprised of a set of vertices and a set of faces formed 
+ * from those vertices. 
  */
 public class Poly3f {
   
@@ -59,23 +59,16 @@ public class Poly3f {
   /** The list of faces making up the polygon. */
   private List<Face3f> faces;
   
-  /** The material used for the polygon. */
-  public Material material;
   
-  /** 
-   * Constructs the polyhedral from an existing array of vertices. 
-   */
-  public Poly3f(Vertex3f[] vertices, Material material) {
+  /** Creates the polyhedral from the given set of vertices. The faces still need to be defined. */
+  public Poly3f(Vertex3f[] vertices) {
     this.vertices = vertices;
-    this.material = material;
-    
     faces = new ArrayList<>();
   }
   
-  
   //////// Vertices
   
-  
+  /** Gets the vertex in this polyhedron at the specified index. */
   public Vertex3f getVertex(int index) {
     return vertices[index];
   }
@@ -240,9 +233,6 @@ public class Poly3f {
   }
   
   public void draw(GL2 gl) {
-    // bind the polygon's material to the OpenGL state.
-    material.glMaterial(gl);
-    
     // Draw each face.
     for(Face3f face : faces) {
       face.draw(gl);
@@ -278,6 +268,8 @@ public class Poly3f {
    * Most polygons' vertices don't change though once the polygon is created, 
    * so for most cases, it is not necessary for a polygon to compute its
    * vertex information more than once. 
+   * This should be called if the vertex information for the polygon 
+   * has changed. 
    */
   public void markDirty() {
     vertices = null;
@@ -350,9 +342,6 @@ public class Poly3f {
   
   /** Render the polygon using VBO. (Fast!)*/
   public void renderVBO(GL2 gl) {
-    
-    // bind the polygon's material to the OpenGL state.
-    material.glMaterial(gl);
     
     // update the vertex information if necessary.
     genBuffers(gl);

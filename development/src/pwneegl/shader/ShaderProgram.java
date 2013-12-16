@@ -79,6 +79,11 @@ public class ShaderProgram {
       glAttachShaders(gl);
       glLinkProgram(gl);
       glValidateProgram(gl);
+      
+      // Once the program is built, we can delete the shaders to save memory.
+      // The compiled shaders won't actually be deleted until the program is deleted. 
+      gl.glDeleteShader(vShader);
+      gl.glDeleteShader(fShader);
     }
     catch(Exception e) {
       e.printStackTrace();
@@ -181,6 +186,14 @@ public class ShaderProgram {
     gl.glGetShaderInfoLog(shader, maxLength, length, 0, data, 0);
     return new String(data);
   }
+  
+  
+  /** Removes the shader from graphics memory. */
+  public void clean(GL2 gl) {
+    gl.glDeleteShader(shaderProgram);
+  }
+  
+  
   
   //////// program/pointer indices
   

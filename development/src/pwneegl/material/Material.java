@@ -120,6 +120,15 @@ public class Material {
     this.emission = new float[] {0f,0f,0f,0f};
   }
   
+  
+  /** Removes the material from graphics memory. */
+  public void clean(GL2 gl) {
+    // Do nothing. 
+    // Plain color materials don't store anything in graphics memory.
+  }
+  
+  
+  
   //////// Diffuse coloring
   
   /** 
@@ -252,6 +261,15 @@ public class Material {
     gl.glMaterialf(GL_FRONT, GL_SHININESS, shininess);
     gl.glMaterialfv(GL_FRONT, GL_EMISSION, emission, 0);
     
+  }
+  
+  /** 
+   * For textured materials, this binds the texture to the specified uniform 
+   * attribute name used in the shader program, in addition to binding other
+   * material properties to the OpenGL state.
+   */
+  public void glMaterial(GL2 gl, String uniName) {
+    glMaterial(gl);
   }
 }
 
