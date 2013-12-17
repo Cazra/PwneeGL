@@ -39,6 +39,7 @@ import com.jogamp.common.nio.Buffers;
 
 import pwneegl.math.Point3f;
 import pwneegl.math.PwneeMath;
+import pwneegl.math.Vector3f;
 
 /** 
  * A vertex is a point in 3D space with extra properties such as color, 
@@ -56,6 +57,12 @@ public class Vertex3f extends Point3f {
   /** The per-vertex normal for this vertex. This is used to produce smoother shading. */
   private float[] normal;
   
+  /** 
+   * The tangental vector for this vertex. This is orthogonal to the normal 
+   * and oriented in the positive s direction of the texture coordinate system 
+   * at this vertex. 
+   */
+   private float[] tangental;
   
   /** Creates the vertex, specifying only its model coordinates. */
   public Vertex3f(float x, float y, float z) {
@@ -198,7 +205,7 @@ public class Vertex3f extends Point3f {
   
   
   
-  //////// Per-vertex normal
+  //////// vertex normal
   
   /** Returns the 3-dimensional normal vector array for this vertex. */
   public float[] getNormal() {
@@ -218,6 +225,40 @@ public class Vertex3f extends Point3f {
     normal = PwneeMath.normalize(new float[] {nx, ny, nz});
   }
   
+  
+  
+  //////// Tangental vector
+  
+  /** 
+   * Computes the tangental vector for this vertex, given two other vertices 
+   * with which this vertex forms a face. 
+   */
+  public void computeTangentalVector(Vertex3f v2, Vertex3f v3) {
+    Vector3f u = new Vector3f(v2.getX() - this.getX(), v2.getY() - this.getY(), v2.getZ() - this.getZ());
+    Vector3f v = new Vector3f(v3.getX() - this.getX(), v3.getY() - this.getY(), v3.getZ() - this.getZ());
+    
+    float su = v2.getTexS() - this.getTexS();
+    float sv = v3.getTexS() - this.getTexS();
+    float tu = v2.getTexT() - this.getTexT();
+    float tv = v3.getTexT() - this.getTexT();
+    float dst = tv*su - tu*sv;
+    
+    if(dst == 0) {
+      tangental = new float[] {0,0,0};
+    }
+    else {
+      tangental = u.scale(tv).sub(v.scale(tu)).scale(dst).getCoords(3);
+    }
+  }
+  
+  
+  /** Returns the 3-dimensional tangental vector array for this vertex, or [0,0,0] if it has not been computed. */
+  public float[] getTangental() {
+    if(tangental == null) {
+      tangental = new float[] {0f, 0f, 0f};
+    }
+    return tangental;
+  }
   
   //////// Custom shader-specific attributes
   

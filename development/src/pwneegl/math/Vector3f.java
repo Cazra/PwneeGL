@@ -89,11 +89,23 @@ public class Vector3f {
   
   /** Returns a copy of the underlying coordinates array. */
   public float[] getCoords() {
+    return getCoords(4);
+  }
+  
+  /** Returns a copy of the underlying coordinates array of the specifed length (in the range [1, 4]). */
+  public float[] getCoords(int length) {
+    /*  
     float[] result = new float[4];
     result[0] = coords[0];
     result[1] = coords[1];
     result[2] = coords[2];
     result[3] = coords[3];
+    return result;
+    */
+    float[] result = new float[length];
+    for(int i = 0; i < length; i++) {
+      result[i] = coords[i];
+    }
     return result;
   }
   

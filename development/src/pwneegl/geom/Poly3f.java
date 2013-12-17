@@ -46,6 +46,7 @@ import static javax.media.opengl.GL2.*; // GL2 constants
 import com.jogamp.common.nio.Buffers;
 
 import pwneegl.material.Material;
+import pwneegl.shader.ShaderLibrary;
 
 /** 
  * A polyhedral comprised of a set of vertices and a set of faces formed 
@@ -82,6 +83,15 @@ public class Poly3f {
   public void addFace(Face3f face) {
     if(face.addToPoly(this)) {
       faces.add(face);
+      
+      // Compute the tangental vectors  for the 3 vertices.
+      Vertex3f v1 = face.getVertex1();
+      Vertex3f v2 = face.getVertex2();
+      Vertex3f v3 = face.getVertex3();
+      
+      v1.computeTangentalVector(v2, v3);
+      v2.computeTangentalVector(v3, v1);
+      v3.computeTangentalVector(v1, v2);
     }
   }
   
@@ -289,8 +299,13 @@ public class Poly3f {
   
   /** The buffer of vertex indices defining the faces. */
   private ShortBuffer elementBuffer = null;
-
   
+  /** 
+   * The number of floats for the attributes of a vertex. 4 position 
+   * coordinates + 4 color coordinates + 3 normal coordinates + 2 texture 
+   * coordinates + 3 tangental coordinates = 16.
+   */
+  private static final int NUM_ATTRIBS = 16;
   
   /** Generates and fills the VBOs. */
   private void genBuffers(GL2 gl) {
@@ -301,7 +316,7 @@ public class Poly3f {
       buffers = new int[2];
       
       // Fill the buffers.
-      megaBuffer = FloatBuffer.allocate(vertices.length*13);
+      megaBuffer = FloatBuffer.allocate(vertices.length * NUM_ATTRIBS);
       elementBuffer = ShortBuffer.allocate(getNumIndices());
       
       for(Vertex3f vertex : vertices) {
@@ -309,6 +324,7 @@ public class Poly3f {
         megaBuffer.put(vertex.getColor());
         megaBuffer.put(vertex.getNormal());
         megaBuffer.put(vertex.getTexCoords());
+        megaBuffer.put(vertex.getTangental());
       }
       for(Face3f face : faces) {
         elementBuffer.put(new short[] {face.getIndex1(), face.getIndex2(), face.getIndex3()});
@@ -345,22 +361,25 @@ public class Poly3f {
     
     // update the vertex information if necessary.
     genBuffers(gl);
+    gl.glBindBuffer(GL_ARRAY_BUFFER, buffers[0]);
+    
+    int stride = NUM_ATTRIBS*Buffers.SIZEOF_FLOAT;
     
     gl.glEnableClientState(GL_VERTEX_ARRAY);
-    gl.glBindBuffer(GL_ARRAY_BUFFER, buffers[0]);
-    gl.glVertexPointer(4, GL_FLOAT, 13*Buffers.SIZEOF_FLOAT, 0);
+    gl.glVertexPointer(4, GL_FLOAT, stride, 0);
     
     gl.glEnableClientState(GL_COLOR_ARRAY);
-    gl.glBindBuffer(GL_ARRAY_BUFFER, buffers[0]);
-    gl.glColorPointer(4, GL_FLOAT, 13*Buffers.SIZEOF_FLOAT, 4*Buffers.SIZEOF_FLOAT);
+    gl.glColorPointer(4, GL_FLOAT, stride, 4*Buffers.SIZEOF_FLOAT);
     
     gl.glEnableClientState(GL_NORMAL_ARRAY);
-    gl.glBindBuffer(GL_ARRAY_BUFFER, buffers[0]);
-    gl.glNormalPointer(GL_FLOAT, 13*Buffers.SIZEOF_FLOAT, 8*Buffers.SIZEOF_FLOAT);
+    gl.glNormalPointer(GL_FLOAT, stride, 8*Buffers.SIZEOF_FLOAT);
     
     gl.glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-    gl.glBindBuffer(GL_ARRAY_BUFFER, buffers[0]);
-    gl.glTexCoordPointer(2, GL_FLOAT, 13*Buffers.SIZEOF_FLOAT, 11*Buffers.SIZEOF_FLOAT);
+    gl.glTexCoordPointer(2, GL_FLOAT, stride, 11*Buffers.SIZEOF_FLOAT);
+    
+    int tangentalPosition = ShaderLibrary.get().getAttrib(gl, "tangental");
+    gl.glVertexAttribPointer(tangentalPosition, 3, GL_FLOAT, false, stride, 13*Buffers.SIZEOF_FLOAT);
+    gl.glEnableVertexAttribArray(tangentalPosition);
     
     // draw!
     gl.glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffers[1]);

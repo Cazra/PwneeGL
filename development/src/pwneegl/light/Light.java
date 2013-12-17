@@ -105,10 +105,11 @@ public abstract class Light {
   
   /** Gets the specular rgba color array. */
   public float[] getSpecular() {
-    float[] result = new float[3];
+    float[] result = new float[4];
     result[0] = specular[0];
     result[1] = specular[1];
     result[2] = specular[2];
+    result[3] = specular[3];
     return result;
   }
   
