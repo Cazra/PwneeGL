@@ -7,39 +7,38 @@ uniform sampler2D bumpMap;
 varying vec3 normal;
 varying vec3 l;
 varying vec3 e;
-varying vec3 t;
+varying vec3 tang;
 
 void main() {
-  // The binormal vector orthogonal to normal and t. Used for doing bump mapping with tangent space.
-  vec3 u = normalize(cross(normal, t));
+  
+  // The binormal vector orthogonal to normal and tang. 
+  // This is used for doing bump mapping with tangent space.
+  vec3 binormal = cross(normal, tang);
   
   // compute the transform from object (bump) space to tangent (normal) space.
-  mat3 tMat = mat3(t, u, normal);
-  tMat = transpose(tMat);
+  mat3 tMat = mat3(tang, binormal, normal);
+  //tMat = transpose(tMat);
 
   // Convert bump from [0,1] to [-1,1] range.
-  vec3 n = normalize(2.0*texture2D(bumpMap, gl_TexCoord[0].st).rgb - 1.0);
+  vec3 n = tMat * normalize(2.0*texture2D(bumpMap, gl_TexCoord[0].st).rgb - 1.0);
   
-  // Compute our perturbed normal by transforming the bump vector to tangent space.
-  //normal = bump; // normalize(tMat * bump);
-  
+  // compute lighting.
   vec3 h = normalize(e + l);
   
   float f = 1.0;
   
-  float kd = max(dot(l, normal), 0.0);
-  float ks = pow(max(dot(normal, h), 0.0), gl_FrontMaterial.shininess);
+  float kd = max(dot(l, n), 0.0);
+  float ks = pow(max(dot(n, h), 0.0), gl_FrontMaterial.shininess);
   
-  if(dot(l, normal) < 0.0) f = 0.0;
+  if(dot(l, n) < 0.0) f = 0.0;
   
-  vec4 diffuse = kd*gl_Color*gl_LightSource[0].diffuse;
+  // light scalars
+  vec4 diffuse = vec4(kd*gl_LightSource[0].diffuse.rgb, gl_LightSource[0].diffuse.a);
   vec4 ambient = gl_LightSource[0].ambient;
-  vec4 specular = f*ks*gl_LightSource[0].specular;
+  vec4 specular = vec4(f*ks*gl_LightSource[0].specular.rgb, gl_LightSource[0].specular.a)*0.1;
   
-  vec4 color = ambient + diffuse + specular;
-  vec4 texColor = texture2D(texMap, gl_TexCoord[0].st);
+  // material color
+  vec4 color = texture2D(texMap, gl_TexCoord[0].st) + gl_Color;
   
-  
-  //gl_FragColor = vec4(color.r, color.g, color.b, gl_Color.a)*texColor;
-  gl_FragColor = vec4(specular, 1);
+  gl_FragColor = diffuse*color + ambient; // vec4((n+1)/2,1); // diffuse*color + ambient;
 }

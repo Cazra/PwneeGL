@@ -39,12 +39,12 @@ public class SimpleScene extends GameCanvas {
   private float cubeSpeedX = -0f;
   
   private float cubeAngleY = 0f;
-  private float cubeSpeedY = -PwneeMath.TAU/150;
+  private float cubeSpeedY = -2*ANGLE_INC;
   
   private float cubeAngleZ = 0f;
   private float cubeSpeedZ = -0f;
   
-  private final float ANGLE_INC = PwneeMath.TAU/2000;
+  private static final float ANGLE_INC = PwneeMath.TAU/2000;
   
   private TestCube[] testCubes;
   
@@ -61,24 +61,24 @@ public class SimpleScene extends GameCanvas {
     super(fps);
     
     /*
-    testCubes = new TestCube[4000];
+    testCubes = new TestCube[1000];
     
     for(int i = 0; i < 10; i++) {
       for(int j = 0; j < 10; j++) {
         for(int k = 0; k < 10; k++) {
           testCubes[i+10*j+100*k] = new TestCube(-2+j, -2+k, -7*(i+1));
           
-          testCubes[i+10*j+100*k+1000] = new TestCube(-2.5f+j, -2+k, -7*(i+1));
-          testCubes[i+10*j+100*k+2000] = new TestCube(-2+j, -2.5f+k, -7*(i+1));
-          testCubes[i+10*j+100*k+3000] = new TestCube(-2.5f+j, -2.5f+k, -7*(i+1));
+        //  testCubes[i+10*j+100*k+1000] = new TestCube(-2.5f+j, -2+k, -7*(i+1));
+        //  testCubes[i+10*j+100*k+2000] = new TestCube(-2+j, -2.5f+k, -7*(i+1));
+        //  testCubes[i+10*j+100*k+3000] = new TestCube(-2.5f+j, -2.5f+k, -7*(i+1));
         }
       }
     }
     */
     
-    testCubes = new TestCube[] {new TestCube(0,0,-7)};
+    testCubes = new TestCube[] {new TestCube(0,0,-4)};
   
-    light =  new LightDirectional( -1f, 1f, 1f);
+    light =  new LightDirectional(1f, 0f, 0f); //new LightDirectional( -1f, 1f, 1f);
     
     fog = new Fog(0f, 0f, 0.5f);
     fog.setDensity(0.05f);
