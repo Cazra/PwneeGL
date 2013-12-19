@@ -78,7 +78,7 @@ public class SimpleScene extends GameCanvas {
     
     testCubes = new TestCube[] {new TestCube(0,0,-4)};
   
-    light =  new LightDirectional(1f, 0f, 0f); //new LightDirectional( -1f, 1f, 1f);
+    light =  new LightDirectional(1f, 1f, 1f); //new LightDirectional( -1f, 1f, 1f);
     
     fog = new Fog(0f, 0f, 0.5f);
     fog.setDensity(0.05f);
@@ -152,9 +152,7 @@ public class SimpleScene extends GameCanvas {
     super.render(drawable);
     
     ShaderProgram shader = ShaderLibrary.get();
-    
-    int shader_time = shader.getUniform(gl, "time");
-    gl.glUniform1f(shader_time, time);
+    shader.setUniformf(gl, "time", time);
     
     gl.glLoadIdentity(); // reset the model-view matrix.
     

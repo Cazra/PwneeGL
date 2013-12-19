@@ -45,7 +45,8 @@ public class PwneeMath {
   
   /** 
    * Convert XYZ coordinates to radial coordinates of the form 
-   * (radius, thetaX, thetaY), relative to the origin. 
+   * (radius, thetaX, thetaY), relative to the origin.  thetaX and thetaY are
+   * given in radians.
    */
   public static float[] toRadial(float x, float y, float z) {
     
@@ -68,6 +69,7 @@ public class PwneeMath {
   
   /** 
    * Convert 3D radial coordinates to XYZ coordinates, relative to the origin. 
+   * thetaX and thetaY are expected to be in radians.
    */
   public static float[] toXYZ(float radius, float thetaX, float thetaY) {
     float x = radius * FloatUtil.cos(thetaY)*FloatUtil.cos(thetaX);

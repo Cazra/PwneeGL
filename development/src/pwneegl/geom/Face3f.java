@@ -61,7 +61,7 @@ public class Face3f {
    */
   private short v1, v2, v3;
   
-  
+  /** Constructs the face, given its vertex indices in CCW order. */
   public Face3f(short v1, short v2, short v3) {
     this.v1 = v1;
     this.v2 = v2;

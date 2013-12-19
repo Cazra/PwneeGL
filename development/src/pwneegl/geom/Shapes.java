@@ -213,36 +213,230 @@ public class Shapes {
    * Creates a new approximation of a unit sphere. 
    * @param latSides    The number of latitude sides for the sphere.
    * @param lonSides    The number of longitude sides for the sphere.
-   * @param color       The argb value for the color.
    * @return            A Poly3f approximating a sphere.
    */
-  public static Poly3f makeSphere(int latSides, int lonSides, int color) {
+  public static Poly3f makeSphere(int latSides, int lonSides) {
     float topLat = PwneeMath.TAU/4;
     float bottomLat = 0-PwneeMath.TAU/4;
+    float leftLon = 0f;
+    float rightLon = PwneeMath.TAU;
     
     float latInc = PwneeMath.TAU/2/latSides;
     float lonInc = PwneeMath.TAU/lonSides;
     
-    return null;
+    
+    // Create all the vertices for our "sphere".
+    int rows = lonSides+1;
+    int cols = latSides+1;
+    int numVertices = rows*cols;
+    Vertex3f[] vertices = new Vertex3f[numVertices];
+    
+    float lat = bottomLat;
+    for(int row = 0; row < rows; row++) {
+      if(row == rows-1) {
+        lat = topLat;
+      }
+      
+      float lon = leftLon;
+      for(int col = 0; col < cols; col++) {
+        if(col == cols-1) {
+          lon = rightLon;
+        }
+        
+        float[] xyz = PwneeMath.toXYZ(1, lat, lon);
+        Vertex3f v = new Vertex3f(xyz[0], xyz[1], xyz[2]);
+        v.setNormal(xyz);
+        v.setTexCoords(col/(0f + cols-1), 1 - row/(0f + rows-1));
+        
+        vertices[col + row*cols] = v;
+        
+        lon += lonInc;
+      }
+      
+      lat += latInc;
+    }
+    
+    // Build the polygon and its faces.
+    Poly3f result = new Poly3f(vertices);
+    
+    for(int row = 0; row < rows-1; row++) {
+      for(int col = 0; col < cols-1; col++) {
+        
+        int v1 = col + row*cols;
+        int v2 = col + 1 + row*cols;
+        int v3 = col + 1 + (row+1)*cols;
+        int v4 = col + (row+1)*cols;
+        
+        result.addFace(v1, v2, v3, v4);
+      }
+    }
+    
+    return result;
   }
   
   
   /** Produces an approximation of a cylinder, with a height of 2 units and a radius of 2 units.*/
-  public static Poly3f makeCylinder(int lonSides, int color) {
+  public static Poly3f makeCylinder(int lonSides) {
     float lonInc = PwneeMath.TAU/lonSides;
+    float leftLon = 0f;
+    float rightLon = PwneeMath.TAU;
     
-    return null;
+    int cols = lonSides+1;
+    Vertex3f[] vertices = new Vertex3f[cols*4];
+    float lon;
+    
+    // top disc
+    lon = leftLon;
+    for(int col = 0; col < cols; col++) {
+      if(col == cols-1) {
+        lon = rightLon;
+      }
+      
+      float[] xyz = PwneeMath.toXYZ(1, 0, lon);
+      Vertex3f v = new Vertex3f(xyz[0], 1, xyz[2]);
+      v.setNormal(new float[] {0, 1, 0});
+      v.setTexCoords(0.5f + xyz[0], 0.5f + xyz[2]/2f);
+      
+      vertices[col] = v;
+      
+      lon += lonInc;
+    }
+    
+    // middle
+    lon = leftLon;
+    for(int col = 0; col < cols; col++) {
+      if(col == cols-1) {
+        lon = rightLon;
+      }
+      
+      float[] xyz = PwneeMath.toXYZ(1, 0, lon);
+      float[] normal = new float[] {xyz[0], 0, xyz[2]};
+      
+      // upper
+      Vertex3f v = new Vertex3f(xyz[0], 1, xyz[2]);
+      v.setNormal(normal);
+      v.setTexCoords(col/(cols - 1f), 0);
+      vertices[col+1*cols] = v;
+      
+      // lower
+      v = new Vertex3f(xyz[0], -1, xyz[2]);
+      v.setNormal(normal);
+      v.setTexCoords(col/(cols - 1f), 1);
+      vertices[col+2*cols] = v;
+      
+      lon += lonInc;
+    }
+    
+    
+    // bottom disc
+    lon = leftLon;
+    for(int col = 0; col < cols; col++) {
+      if(col == cols-1) {
+        lon = rightLon;
+      }
+      
+      float[] xyz = PwneeMath.toXYZ(1, 0, lon);
+      Vertex3f v = new Vertex3f(xyz[0], -1, xyz[2]);
+      v.setNormal(new float[] {0, -1, 0});
+      v.setTexCoords(0.5f + xyz[0], 0.5f - xyz[2]/2f);
+      
+      vertices[col + 3*cols] = v;
+      
+      lon += lonInc;
+    }
+    
+    // Build the polygon and its faces.
+    Poly3f result = new Poly3f(vertices);
+    
+    // top
+    int[] topVs = new int[cols];
+    for(int col = 0; col < cols; col++) {
+      topVs[col] = col;
+    }
+    result.addFaceFan(topVs);
+    
+    // middle
+    for(int col = 0; col < cols-1; col++) {
+      int v1 = col + 2*cols;
+      int v2 = (col + 1) + 2*cols;
+      int v3 = (col + 1) + 1*cols;
+      int v4 = col + 1*cols;
+      result.addFace(v1, v2, v3, v4);
+    }
+    
+    // top
+    int[] bottomVs = new int[cols];
+    for(int col = 0; col < cols; col++) {
+      bottomVs[cols-col-1] = col + 3*cols;
+    }
+    result.addFaceFan(bottomVs);
+    
+    return result;
   }
   
   
   
-  /** Creates a rectangle of the specified dimensions and color. */
-  public static Poly3f makeRect(float w, float h, int color) {
+  /** Creates a rectangle of the specified dimensions. */
+  public static Poly3f makeRect(float w, float h) {
     float left = 0f - w/2f;
     float top = h/2f;
     float right = w/2f;
     float bottom = 0f - h/2f;
     
-    return null;
+    Vertex3f[] vertices = new Vertex3f[8];
+    Vertex3f v;
+    
+    // front 
+    float[] frontNormal = new float[] {0f, 0f, 1f};
+    
+    v = new Vertex3f(left, top, 0f);
+    v.setNormal(frontNormal);
+    v.setTexCoords(0,0);
+    vertices[0] = v;
+    
+    v = new Vertex3f(left, bottom, 0f);
+    v.setNormal(frontNormal);
+    v.setTexCoords(0,1);
+    vertices[1] = v;
+    
+    v = new Vertex3f(right, bottom, 0f);
+    v.setNormal(frontNormal);
+    v.setTexCoords(1,1);
+    vertices[2] = v;
+    
+    v = new Vertex3f(right, top, 0f);
+    v.setNormal(frontNormal);
+    v.setTexCoords(1,0);
+    vertices[3] = v;
+    
+    // back 
+    float[] backNormal = new float[] {0f, 0f, -1f};
+    
+    v = new Vertex3f(left, top, 0f);
+    v.setNormal(backNormal);
+    v.setTexCoords(1,0);
+    vertices[4] = v;
+    
+    v = new Vertex3f(left, bottom, 0f);
+    v.setNormal(backNormal);
+    v.setTexCoords(1,1);
+    vertices[5] = v;
+    
+    v = new Vertex3f(right, bottom, 0f);
+    v.setNormal(backNormal);
+    v.setTexCoords(0,1);
+    vertices[6] = v;
+    
+    v = new Vertex3f(right, top, 0f);
+    v.setNormal(backNormal);
+    v.setTexCoords(0,0);
+    vertices[7] = v;
+    
+    // The polygon and its faces.
+    Poly3f result = new Poly3f(vertices);
+    result.addFace(0, 1, 2, 3);
+    result.addFace(4, 7, 6, 5);
+    
+    return result;
   }
 }

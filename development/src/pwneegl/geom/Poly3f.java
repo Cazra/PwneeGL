@@ -78,7 +78,7 @@ public class Poly3f {
   //////// Faces
   
   /**
-   * Adds a face to this polygon.   
+   * Adds a face to this polygon.
    */
   public void addFace(Face3f face) {
     if(face.addToPoly(this)) {
@@ -101,7 +101,10 @@ public class Poly3f {
     addFace(new Face3f((short) v1, (short) v2, (short) v3));
   }
   
-  /** Adds 2 faces sharing an edge to this polygon. Conventient for making quad-like faces. */
+  /** 
+   * Adds 2 faces sharing an edge to this polygon. 
+   * Conventient for making quad-like faces. 
+   */
   public void addFace(int v1, int v2, int v3, int v4) {
     addFace(v1, v2, v3);
     addFace(v1, v3, v4);

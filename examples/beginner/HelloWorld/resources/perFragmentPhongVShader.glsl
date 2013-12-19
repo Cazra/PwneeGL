@@ -13,13 +13,13 @@ varying vec3 tang;
 void main() {
   float s;
   s = abs(sin(time));
-  gl_Position = gl_ModelViewProjectionMatrix*gl_Vertex; //gl_ModelViewProjectionMatrix*(vec4(s, s, s, 1.0)*gl_Vertex);
+  gl_Position = gl_ModelViewProjectionMatrix*gl_Vertex; // gl_ModelViewProjectionMatrix*(vec4(s, s, s, 1.0)*gl_Vertex); // gl_ModelViewProjectionMatrix*gl_Vertex; //
   
   vec4 eyePos = gl_ModelViewMatrix * gl_Vertex;
   vec4 eyeLightPos = gl_LightSource[0].position;
   
   normal = normalize(gl_NormalMatrix*gl_Normal);
-  l = normalize(vec3(0,0,1)); //eyeLightPos.xyz - eyePos.xyz);
+  l = normalize(gl_LightSource[0].position.xyz); //vec3(0,0,1)); //eyeLightPos.xyz - eyePos.xyz);
   e = -normalize(eyePos.xyz);
   tang = normalize(gl_NormalMatrix*tangental);
   

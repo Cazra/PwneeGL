@@ -258,9 +258,23 @@ public class ShaderProgram {
     return gl.glGetAttribLocation(shaderProgram, name);
   }
   
+  
   /** Returns the index to a uniform attribute specified in the shader program. */
   public int getUniform(GL2 gl, String name) {
     return gl.glGetUniformLocation(shaderProgram, name);
+  }
+  
+  
+  /** Sets the value for some uniform variable in the shader. */
+  public void setUniformf(GL2 gl, String name, float value) {
+    int uniLoc = getUniform(gl, name);
+    gl.glUniform1f(uniLoc, value);
+  }
+  
+  /** Sets the value for some uniform variable in the shader. */
+  public void setUniformi(GL2 gl, String name, int value) {
+    int uniLoc = getUniform(gl, name);
+    gl.glUniform1i(uniLoc, value);
   }
   
   //////// Apply

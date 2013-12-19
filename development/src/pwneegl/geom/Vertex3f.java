@@ -244,13 +244,17 @@ public class Vertex3f extends Point3f {
     float dst = tv*su - tu*sv;
     
     if(dst == 0) {
-      tangental = new float[] {0,0,0};
+      tangental = new float[] {1,0,0};
     }
     else {
       tangental = u.scale(tv).sub(v.scale(tu)).scale(dst).getCoords(3);
     }
   }
   
+  /** Sets the tangental vector manually. */
+  public void setTangental(float[] t) {
+    this.tangental = new float[] {t[0], t[1], t[2]};
+  }
   
   /** Returns the 3-dimensional tangental vector array for this vertex, or [0,0,0] if it has not been computed. */
   public float[] getTangental() {
