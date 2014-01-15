@@ -40,6 +40,7 @@ import com.jogamp.common.nio.Buffers;
 import pwneegl.math.Point3f;
 import pwneegl.math.PwneeMath;
 import pwneegl.math.Vector3f;
+import pwneegl.shader.ShaderLibrary;
 
 /** 
  * A vertex is a point in 3D space with extra properties such as color, 
@@ -60,9 +61,13 @@ public class Vertex3f extends Point3f {
   /** 
    * The tangental vector for this vertex. This is orthogonal to the normal 
    * and oriented in the positive s direction of the texture coordinate system 
-   * at this vertex. 
+   * at this vertex. This is useful for special effects such as bump mapping.
    */
-   private float[] tangental;
+  private float[] tangental;
+   
+   
+  
+  
   
   /** Creates the vertex, specifying only its model coordinates. */
   public Vertex3f(float x, float y, float z) {
@@ -267,42 +272,55 @@ public class Vertex3f extends Point3f {
   //////// Custom shader-specific attributes
   
   /** 
-   * Returns an array of the vertex's custom shader attributes.
+   * Returns an array of the vertex's custom float shader attributes.
    * The default implementation returns null.
    * This should be overridden if you plan to use custom shader attributes for 
-   * your vertices.
+   * your vertices. The attributes should be returned in the same order that
+   * their names are registered in the ShaderProgram.
    */
-  public float[] getAttribs() {
+  public float[] getAttribs1() {
     return null;
   }
   
   /** 
-   * Returns an array of custom shader attribute names. 
-   * Each of these names corresponds by index to an attribute 
-   * returned by getAttribs.
+   * Returns an array of the vertex's custom vec3 shader attributes.
    * The default implementation returns null.
-   * This should be overridden if you plan to use custom shader attributes for
+   * This should be overridden if you plan to use custom shader attributes for 
    * your vertices.
    */
-  public String[] getAttribNames() {
+  public float[][] getAttribs3() {
     return null;
   }
   
+  /** 
+   * Returns the number of floats for the attributes of a vertex. 4 position 
+   * coordinates + 4 color coordinates + 3 normal coordinates + 2 texture 
+   * coordinates + 3 tangental coordinates = 16 for just base attributes.
+   * Then add 1 for every float attribute and add 3 for every vec3 attribute.
+   */
+  public static int getNumAttribs() {
+    int result = 16;
+    result += ShaderLibrary.get().getNumAttribs1();
+    result += ShaderLibrary.get().getNumAttribs3()*3;
+    return result;
+  }
   
   //////// Rendering
   
   /** Renders the vertex naiively in GL_POINTS mode. */
-  public void render(GL gl) {
+  @Deprecated
+  public void renderOld(GL gl) {
     GL2 gl2 = gl.getGL2();
     
     gl2.glBegin(GL_POINTS);
-    draw(gl2);
+    drawOld(gl2);
     gl2.glEnd();
   }
   
   
   /** Draws the vertex, assuming glBegin has already been called. */
-  public void draw(GL2 gl) {
+  @Deprecated
+  public void drawOld(GL2 gl) {
     gl.glColor4f(getRed(), getGreen(), getBlue(), getAlpha());
   //  gl.glNormal3fv(getNormal(), 0);
     gl.glVertex3f(getX(), getY(), getZ());

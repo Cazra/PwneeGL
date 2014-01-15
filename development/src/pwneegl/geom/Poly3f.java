@@ -237,18 +237,20 @@ public class Poly3f {
   //////// Old GL Rendering
   
   /** Draws the engire polygon using a naiive opengl drawing approach. */
-  public void render(GL gl) {
+  @Deprecated
+  public void renderOld(GL gl) {
     GL2 gl2 = gl.getGL2();
     
     gl2.glBegin(GL_TRIANGLES);
-    draw(gl2);
+    drawOld(gl2);
     gl2.glEnd();
   }
   
-  public void draw(GL2 gl) {
+  @Deprecated
+  public void drawOld(GL2 gl) {
     // Draw each face.
     for(Face3f face : faces) {
-      face.draw(gl);
+      face.drawOld(gl);
     }
   }
   
@@ -337,7 +339,7 @@ public class Poly3f {
       megaBuffer.flip();
       elementBuffer.flip();
       
-      // Bind the buffers.
+      // Generate and fill the buffers.
       gl.glGenBuffers(buffers.length, buffers, 0);
       
       gl.glBindBuffer(GL_ARRAY_BUFFER, buffers[0]);
@@ -360,7 +362,7 @@ public class Poly3f {
   
   
   /** Render the polygon using VBO. (Fast!)*/
-  public void renderVBO(GL2 gl) {
+  public void render(GL2 gl) {
     
     // update the vertex information if necessary.
     genBuffers(gl);

@@ -46,6 +46,7 @@ import com.jogamp.opengl.util.texture.Texture;
 import static javax.media.opengl.GL.*;  // GL constants
 import static javax.media.opengl.GL2.*; // GL2 constants
 
+import pwneegl.PwneeGLError;
 import pwneegl.math.PwneeMath;
 import pwneegl.shader.ShaderLibrary;
 
@@ -104,9 +105,23 @@ public class TexturedMaterial extends Material {
   }
   
   
-  /** Loads the texture into graphics memory. */
-  private void initTexture(GL2 gl) {
+  /** 
+   * Loads the texture into graphics memory. 
+   */
+  private void _initTexture(GL2 gl) {
     texture = AWTTextureIO.newTexture(gl.getGLProfile(), image, false);
+  }
+  
+  /**
+   * Returns the OpenGL Texture for this material. 
+   * Throws a PwneeGLError if the texture is not yet loaded into graphics
+   * memory.
+   */
+  public Texture getTexture() {
+    if(texture == null) {
+      throw new PwneeGLError("The texture is not loaded into graphics memory.");
+    }
+    return texture;
   }
   
   
@@ -134,12 +149,12 @@ public class TexturedMaterial extends Material {
   
   /** Returns the width of the allocated OpenGL texture in pixels. */
   public int getGLWidth() {
-    return texture.getWidth();
+    return getTexture().getWidth();
   }
   
   /** Returns the height of the allocated OpenGL texture in pixels. */
   public int getGLHeight() {
-    return texture.getHeight();
+    return getTexture().getHeight();
   }
   
   
@@ -149,18 +164,17 @@ public class TexturedMaterial extends Material {
   
   
   /** 
-   * Attempts to bind the texture and its properties to the specified uniform 
-   * attribute in the OpenGL state and current shader program. 
+   * Attempts to bind the texture and its properties to the specified sampler2D  
+   * uniform attribute in the OpenGL state and current shader program. 
    */
   public void glMaterial(GL2 gl, String uniName) {
     if(texture == null) {
-      initTexture(gl);
+      _initTexture(gl);
     }
     
     gl.glActiveTexture(activeTexNum);
     texture.bind(gl);
-    int texLocation = ShaderLibrary.get().getUniform(gl, uniName);
-    gl.glUniform1i(texLocation, activeTexNum - GL_TEXTURE0);
+    ShaderLibrary.get().setUniformi(gl, uniName, activeTexNum - GL_TEXTURE0);
     
     gl.glMaterialfv(GL_FRONT, GL_AMBIENT, getAmbient(), 0);
     gl.glMaterialfv(GL_FRONT, GL_DIFFUSE, getDiffuse(), 0);

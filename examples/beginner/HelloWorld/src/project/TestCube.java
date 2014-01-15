@@ -36,7 +36,7 @@ public class TestCube extends Sprite3f {
   }
   
   private void initMaterial() {
-    Material m = new TexturedMaterial("moon.png", true, GL_TEXTURE0);
+    Material m = new TexturedMaterial("sampleTex.png", true, GL_TEXTURE0);
     m.setShininess(100f);
     m.setSpecular(1f, 1f, 0f, 1f);
     m.setEmission(0f, 0.5f, 0.5f, 1f);
@@ -50,10 +50,10 @@ public class TestCube extends Sprite3f {
   @Override
   public void draw(GL2 gl) {
     
-    ShaderLibrary.get().setUniformi(gl, "useBump", 0);
+    ShaderLibrary.get().setUniformi(gl, "useBump", 1);
     MaterialLibrary.use(gl, "testCube", "texMap");
     MaterialLibrary.use(gl, "testCubeBump", "bumpMap");
-    shape.renderVBO(gl);
+    shape.render(gl);
   }
   
   

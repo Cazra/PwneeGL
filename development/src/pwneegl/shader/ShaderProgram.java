@@ -39,6 +39,9 @@ import javax.media.opengl.GL2;
 import static javax.media.opengl.GL.*;  // GL constants
 import static javax.media.opengl.GL2.*; // GL2 constants
 
+import pwneegl.GLNames;
+import pwneegl.PwneeGLError;
+
 /** 
  * Reads and compiles a shader program which can then be used for customized rendering. 
  * If for some reason, it fails to create the shader program, an Exception will
@@ -62,6 +65,11 @@ public class ShaderProgram {
   /** The index to the shader program object in the OpenGL state. */
   private int shaderProgram;
   
+  /** List of expected float vertex attribute names. */
+  private String[] attrib1Names = new String[0];
+  
+  /** List of expected vec3 vertex attribute names. */
+  private String[] attrib3Names = new String[0];
   
   /** 
    * The constructor will read the source files for the shader program and 
@@ -80,6 +88,9 @@ public class ShaderProgram {
       glLinkProgram(gl);
       glValidateProgram(gl);
       
+      initAttribs(gl);
+      initUniforms(gl);
+      
       // Once the program is built, we can delete the shaders to save memory.
       // The compiled shaders won't actually be deleted until the program is deleted. 
       gl.glDeleteShader(vShader);
@@ -90,7 +101,7 @@ public class ShaderProgram {
     }
   }
   
-  
+  /** Read the shader program from the specified external files. */
   public ShaderProgram(GL2 gl, String vertexShaderPath, String fragmentShaderPath) {
     this(gl, vertexShaderPath, fragmentShaderPath, false);
   }  
@@ -125,11 +136,11 @@ public class ShaderProgram {
     gl.glShaderSource(shader, 1, new String[] {shaderContents}, new int[] {shaderContents.length()}, 0); 
     gl.glCompileShader(shader);
     
-    // If there were any compile errors, throw an Exception with debug information.
+    // If there were any compile errors, throw a PwneeGLError with debug information.
     int status = glGetShaderi(gl, shader, GL_COMPILE_STATUS);
     if(status != GL_TRUE) {
       String msg = glGetShaderInfoLog(gl, shader);
-      throw new Exception(msg);
+      throw new PwneeGLError(msg);
     }
     
     return shader;
@@ -139,35 +150,34 @@ public class ShaderProgram {
   
   /** 
    * Attempts to attach the vertex and fragment shaders to the shader program object. 
-   * An Exception is thrown if it fails. 
    */
-  private void glAttachShaders(GL2 gl) throws Exception {
+  private void glAttachShaders(GL2 gl) {
     gl.glAttachShader(shaderProgram, vShader);
     gl.glAttachShader(shaderProgram, fShader);
   }
   
   
-  /** Attempts to link the shader program object. An Exception is thrown if it fails. */
-  private void glLinkProgram(GL2 gl) throws Exception {
+  /** Attempts to link the shader program object. An PwneeGLError is thrown if it fails. */
+  private void glLinkProgram(GL2 gl) {
     gl.glLinkProgram(shaderProgram);
     
     int status = glGetProgrami(gl, GL_LINK_STATUS);
     if(status != GL_TRUE) {
-      throw new Exception("Failed to link the shader program object.");
+      throw new PwneeGLError("Failed to link the shader program object.");
     }
   }
   
   
-  /** Attempts to validate the shader program object. An Exception is thrown if it fails. */
-  private void glValidateProgram(GL2 gl) throws Exception {
+  /** Attempts to validate the shader program object. A PwneeGLError is thrown if it fails. */
+  private void glValidateProgram(GL2 gl) {
     gl.glValidateProgram(shaderProgram);
       
-    // If the program failed to validate, throw an Exception containing 
+    // If the program failed to validate, throw an PwneeGLError containing 
     // information about why it failed.
     int status = glGetProgrami(gl, GL_VALIDATE_STATUS);
     if(status != GL_TRUE) {
       String msg = glGetProgramInfoLog(gl);
-      throw new Exception(msg);
+      throw new PwneeGLError(msg);
     }
   }
   
@@ -188,9 +198,65 @@ public class ShaderProgram {
   }
   
   
-  /** Removes the shader from graphics memory. */
+  /** Populates the list of vertex attributes available to this program. */
+  private void initAttribs(GL2 gl) {
+    int numAttribs = glGetProgrami(gl, GL_ACTIVE_ATTRIBUTES);
+    System.out.println("Number active attributes: " + numAttribs);
+    
+    int maxLength = glGetProgrami(gl, GL_ACTIVE_ATTRIBUTE_MAX_LENGTH);
+    System.out.println("Max attribute name length: " + maxLength);
+    
+    for(int i = 0; i < numAttribs; i++) {
+      int lengthPointer[] = new int[1];
+      int sizePointer[] = new int[1];
+      int typePointer[] = new int[1];
+      byte nameBytes[] = new byte[maxLength];
+      gl.glGetActiveAttrib(shaderProgram, i, maxLength, 
+                            lengthPointer, 0, 
+                            sizePointer, 0, 
+                            typePointer, 0, 
+                            nameBytes, 0);
+      int length = lengthPointer[0];
+      int size = sizePointer[0];
+      int type = typePointer[0];
+      String name = new String(nameBytes).trim();
+      
+      System.out.println("Attrib " + i + ": " + name + ", length " + length + ", size " + size + ", type " + GLNames.glType(type));
+    }
+  }
+  
+  /** Populates the list of uniforms available to this program. */
+  private void initUniforms(GL2 gl) {
+    int numUnis = glGetProgrami(gl, GL_ACTIVE_UNIFORMS);
+    System.out.println("Number active uniforms: " + numUnis);
+    
+    int maxLength = glGetProgrami(gl, GL_ACTIVE_UNIFORM_MAX_LENGTH);
+    System.out.println("Max uniform name length: " + maxLength);
+    
+    for(int i = 0; i < numUnis; i++) {
+      int lengthPointer[] = new int[1];
+      int sizePointer[] = new int[1];
+      int typePointer[] = new int[1];
+      byte nameBytes[] = new byte[maxLength];
+      gl.glGetActiveUniform(shaderProgram, i, maxLength, 
+                            lengthPointer, 0, 
+                            sizePointer, 0, 
+                            typePointer, 0, 
+                            nameBytes, 0);
+      int length = lengthPointer[0];
+      int size = sizePointer[0];
+      int type = typePointer[0];
+      String name = new String(nameBytes).trim();
+      
+      System.out.println("Uniform " + i + ": " + name + ", length " + length + ", size " + size + ", type " + GLNames.glType(type));
+    }
+  }
+  
+  
+  
+  /** Removes the shader program from graphics memory. */
   public void clean(GL2 gl) {
-    gl.glDeleteShader(shaderProgram);
+    gl.glDeleteProgram(shaderProgram);
   }
   
   
@@ -252,6 +318,50 @@ public class ShaderProgram {
   
   
   //////// Shader vertex attributes and uniform variables
+  
+  /** 
+   * Sets the list of names of float vertex attributes expected in the shader 
+   * program, in the order that they should go through the pipeline. 
+   */
+  private void _setAttrib1Names(String[] names) {
+    attrib1Names = names;
+  }
+  
+  /** 
+   * Returns the list of names of the float vertex attributes expected in the 
+   * shader, in the order that they should go through the pipeline.
+   */
+  public String[] getAttrib1Names() {
+    return new String[attrib1Names.length];
+  }
+  
+  /** Returns the number of float vertex attributes expected in the shader. */
+  public int getNumAttribs1() {
+    return attrib1Names.length;
+  }
+  
+  
+  /** 
+   * Sets the list of names of vec3 vertex attributes expected in the shader 
+   * program, in the order that they should go through the pipeline. 
+   */
+  private void _setAttrib3Names(String[] names) {
+    attrib3Names = names;
+  }
+  
+  /**
+   * Returns the list of names of the vec3 vertex attributes expected in the 
+   * shader, in the order that they should go through the pipeline.
+   */
+  public String[] getAttrib3Names() {
+    return new String[attrib3Names.length];
+  }
+  
+  /** Returns the number of vec3 vertex attributes expected in the shader. */
+  public int getNumAttribs3() {
+    return attrib3Names.length;
+  }
+  
   
   /** Returns the index to a vertex attribute specified in the shader program. */
   public int getAttrib(GL2 gl, String name) {

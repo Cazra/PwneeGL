@@ -14,6 +14,8 @@ import javax.media.opengl.glu.GLU;
 import static javax.media.opengl.GL.*;  // GL constants
 import static javax.media.opengl.GL2.*; // GL2 constants
 
+import com.jogamp.opengl.math.FloatUtil;
+
 import pwneegl.GameCanvas;
 import pwneegl.GameWindow;
 import pwneegl.geom.Poly3f;
@@ -60,23 +62,23 @@ public class SimpleScene extends GameCanvas {
   public SimpleScene(int fps) {
     super(fps);
     
-    /*
-    testCubes = new TestCube[1000];
+    
+    testCubes = new TestCube[4000];
     
     for(int i = 0; i < 10; i++) {
       for(int j = 0; j < 10; j++) {
         for(int k = 0; k < 10; k++) {
           testCubes[i+10*j+100*k] = new TestCube(-2+j, -2+k, -7*(i+1));
           
-        //  testCubes[i+10*j+100*k+1000] = new TestCube(-2.5f+j, -2+k, -7*(i+1));
-        //  testCubes[i+10*j+100*k+2000] = new TestCube(-2+j, -2.5f+k, -7*(i+1));
-        //  testCubes[i+10*j+100*k+3000] = new TestCube(-2.5f+j, -2.5f+k, -7*(i+1));
+          testCubes[i+10*j+100*k+1000] = new TestCube(-2.5f+j, -2+k, -7*(i+1));
+          testCubes[i+10*j+100*k+2000] = new TestCube(-2+j, -2.5f+k, -7*(i+1));
+          testCubes[i+10*j+100*k+3000] = new TestCube(-2.5f+j, -2.5f+k, -7*(i+1));
         }
       }
     }
-    */
     
-    testCubes = new TestCube[] {new TestCube(0,0,-4)};
+    
+  //  testCubes = new TestCube[] {new TestCube(0,0,-4)};
   
     light =  new LightDirectional(1f, 1f, 1f); //new LightDirectional( -1f, 1f, 1f);
     
@@ -96,9 +98,7 @@ public class SimpleScene extends GameCanvas {
     GL2 gl = drawable.getGL().getGL2();
     
     // Use our shader program.
-    //shader = new ShaderProgram(gl, "perFragmentPhongVShader.glsl", "perFragmentPhongFShader.glsl", true);
-    //shader.useProgram(gl);
-    ShaderLibrary.put("shader", new ShaderProgram(gl, "perFragmentPhongVShader.glsl", "perFragmentPhongFShader.glsl", true));
+    ShaderLibrary.put("shader", new ShaderProgram(gl, "bumpVShader.glsl", "bumpFShader.glsl", true));
     ShaderLibrary.use(gl, "shader");
   }
   
@@ -136,11 +136,18 @@ public class SimpleScene extends GameCanvas {
       cubeSpeedZ += ANGLE_INC;
     }
     
+    // Scale the sprites based on a function of time.
+    float scale = FloatUtil.abs(FloatUtil.sin(time));
+    
     for(TestCube testCube : testCubes) {
       testCube.angleX += cubeSpeedX;
       testCube.angleY += cubeSpeedY;
       testCube.angleZ += cubeSpeedZ;
+      testCube.scaleUni = scale;
     }
+    
+    
+    
   }
   
   

@@ -212,20 +212,22 @@ public class Face3f {
   
   
   /** Draws the face using a naiive opengl drawing approach. */
-  public void render(GL gl) {
+  @Deprecated
+  public void renderOld(GL gl) {
     GL2 gl2 = gl.getGL2();
     
     gl2.glBegin(GL_TRIANGLES);
-    draw(gl2);
+    drawOld(gl2);
     gl2.glEnd();
   }
   
   /** Draw, assuming we are already drawing in GL_TRIANGLES mode. */
-  public void draw(GL2 gl) {
+  @Deprecated
+  public void drawOld(GL2 gl) {
     gl.glNormal3fv(getVertex3().getNormal(), 0);
-    getVertex1().draw(gl);
-    getVertex2().draw(gl);
-    getVertex3().draw(gl);
+    getVertex1().drawOld(gl);
+    getVertex2().drawOld(gl);
+    getVertex3().drawOld(gl);
   }
   
   
