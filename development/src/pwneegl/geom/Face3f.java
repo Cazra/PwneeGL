@@ -208,29 +208,8 @@ public class Face3f {
     return (getVertex1().isOpaque() && getVertex2().isOpaque() && getVertex3().isOpaque());
   }
   
-  //////// Rendering
   
-  
-  /** Draws the face using a naiive opengl drawing approach. */
-  @Deprecated
-  public void renderOld(GL gl) {
-    GL2 gl2 = gl.getGL2();
-    
-    gl2.glBegin(GL_TRIANGLES);
-    drawOld(gl2);
-    gl2.glEnd();
-  }
-  
-  /** Draw, assuming we are already drawing in GL_TRIANGLES mode. */
-  @Deprecated
-  public void drawOld(GL2 gl) {
-    gl.glNormal3fv(getVertex3().getNormal(), 0);
-    getVertex1().drawOld(gl);
-    getVertex2().drawOld(gl);
-    getVertex3().drawOld(gl);
-  }
-  
-  
+  //////// Misc
   
   public String toString() {
     return "Face3f:{" + getVertex1() + ", " + getVertex2() + ", " + getVertex3() + "}";

@@ -25,7 +25,7 @@ import pwneegl.sprite.Sprite3f;
 /** A sprite for a simple test cube. */
 public class TestCube extends Sprite3f {
   
-  private static Poly3f shape = Shapes.makeSphere(20, 20); // Shapes.makeSphere(20, 20); // Shapes.makeCube(); // Shapes.makeRect(4f, 3f); // Shapes.makeCylinder(20);
+  private static Poly3f shape = null;
   
   public TestCube(float x, float y, float z) {
     super(x, y, z);
@@ -53,8 +53,20 @@ public class TestCube extends Sprite3f {
     ShaderLibrary.get().setUniformi(gl, "useBump", 1);
     MaterialLibrary.use(gl, "testCube", "texMap");
     MaterialLibrary.use(gl, "testCubeBump", "bumpMap");
-    shape.render(gl);
+    getShape().render(gl);
   }
   
   
+  private static Poly3f getShape() {
+    if(shape == null) {
+      shape = Shapes.makeSphere(20, 20); // Shapes.makeSphere(20, 20); // Shapes.makeCube(); // Shapes.makeRect(4f, 3f); // Shapes.makeCylinder(20);
+      
+      // Assign the vertices their tangental attributes. 
+      for(Vertex3f vertex : shape.getVertices()) {
+        vertex.setAttribfv("tangental", vertex.getTangental());
+        vertex.setAttribfv("rainbowbarf", new float[] {(float) Math.random(), (float) Math.random(), (float) Math.random()});
+      }
+    }
+    return shape;
+  }
 }

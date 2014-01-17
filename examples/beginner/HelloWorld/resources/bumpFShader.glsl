@@ -18,7 +18,6 @@ void main() {
   
   // compute the transform from object (bump) space to tangent (normal) space.
   mat3 tMat = mat3(tang, binormal, normal);
-  //tMat = transpose(tMat);
 
   // Convert bump from [0,1] to [-1,1] range.
   vec3 n = normal;

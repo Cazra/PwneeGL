@@ -45,7 +45,10 @@ import static javax.media.opengl.GL2.*; // GL2 constants
 
 import com.jogamp.common.nio.Buffers;
 
+import pwneegl.GLNames;
+import pwneegl.geom.data.VBOPipeline;
 import pwneegl.material.Material;
+import pwneegl.shader.Attribute;
 import pwneegl.shader.ShaderLibrary;
 
 /** 
@@ -55,23 +58,59 @@ import pwneegl.shader.ShaderLibrary;
 public class Poly3f {
   
   /** The vertices making up the polygon. */
-  private Vertex3f[] vertices;
+  private List<Vertex3f> vertices;
   
   /** The list of faces making up the polygon. */
   private List<Face3f> faces;
   
+  /** The programmable vbo pipeline manager for this polygon. */
+  private VBOPipeline pipeline;
   
   /** Creates the polyhedral from the given set of vertices. The faces still need to be defined. */
-  public Poly3f(Vertex3f[] vertices) {
+  public Poly3f(Vertex3f[] vArr) {
+    vertices = new ArrayList<>();
+    for(Vertex3f v : vArr) {
+      vertices.add(v);
+    }
+    faces = new ArrayList<>();
+    pipeline = new VBOPipeline();
+  }
+  
+  /** Creates the polyhedral from the given set of vertices. The faces still need to be defined. */
+  public Poly3f(List<Vertex3f> vertices) {
     this.vertices = vertices;
     faces = new ArrayList<>();
+    pipeline = new VBOPipeline();
+  }
+  
+  /** Creates the polyhedral from the given set of vertices and faces. */
+  public Poly3f(List<Vertex3f> vertices, List<Face3f> faces) {
+    this.vertices = vertices;
+    this.faces = faces;
+    pipeline = new VBOPipeline();
+  }
+  
+  
+  /** Removes the vertex buffer data for this polyhedral from graphics memory. */
+  public void clean(GL2 gl) {
+    pipeline.clean(gl);
   }
   
   //////// Vertices
   
   /** Gets the vertex in this polyhedron at the specified index. */
   public Vertex3f getVertex(int index) {
-    return vertices[index];
+    return vertices.get(index);
+  }
+  
+  /** Returns the number of vertices making up this polygon. */
+  public int getNumVertices() {
+    return vertices.size(); 
+  }
+  
+  /** Returns a copy of the list of vertices in this polygon. */
+  public List<Vertex3f> getVertices() {
+    return new ArrayList<Vertex3f>(vertices);
   }
   
   
@@ -170,6 +209,22 @@ public class Poly3f {
     return result;
   }
   
+  /** Returns a copy of the list of faces for this polygon. */
+  public List<Face3f> getFaces() {
+    return new ArrayList<Face3f>(faces);
+  }
+  
+  
+  /** Returns the number of faces making up this polygon. */
+  public int getNumFaces() {
+    return faces.size();
+  }
+  
+  /** Returns the total number of vertex indices making up the faces of this polygon. */
+  public int getNumIndices() {
+    return faces.size()*3;
+  }
+  
   //////// Colors
   
   /** 
@@ -234,170 +289,11 @@ public class Poly3f {
   }
   
   
-  //////// Old GL Rendering
-  
-  /** Draws the engire polygon using a naiive opengl drawing approach. */
-  @Deprecated
-  public void renderOld(GL gl) {
-    GL2 gl2 = gl.getGL2();
-    
-    gl2.glBegin(GL_TRIANGLES);
-    drawOld(gl2);
-    gl2.glEnd();
-  }
-  
-  @Deprecated
-  public void drawOld(GL2 gl) {
-    // Draw each face.
-    for(Face3f face : faces) {
-      face.drawOld(gl);
-    }
-  }
-  
-  
-  //////// VBO Rendering
-  
-  /** Returns the number of vertices making up this polygon. */
-  public int getNumVertices() {
-    return vertices.length; 
-  }
-  
-  /** Returns the array of all the vertices in this polygon. */
-  public Vertex3f[] getVertices() {
-    return vertices;
-  }
-  
-  /** Returns the number of faces making up this polygon. */
-  public int getNumFaces() {
-    return faces.size();
-  }
-  
-  /** Returns the total number of vertex indices making up the faces of this polygon. */
-  public int getNumIndices() {
-    return faces.size()*3;
-  }
-  
-  /** 
-   * Causes the polygon to forget its cached vertex information so that it 
-   * must be recomputed. 
-   * Most polygons' vertices don't change though once the polygon is created, 
-   * so for most cases, it is not necessary for a polygon to compute its
-   * vertex information more than once. 
-   * This should be called if the vertex information for the polygon 
-   * has changed. 
-   */
-  public void markDirty() {
-    vertices = null;
-    vboDirty = true;
-  }
-  
-  
-  // Buffers for VBO are cached for increased performance. 
-  // Only repopulate the buffers if markDirty() is called on the polygon.
-  private boolean vboDirty = true;
-  
-  /** The pointers to the VBOs. */
-  private int[] buffers = null;
-  
-  /** The buffer containing the attributes for all the vertices. */
-  private FloatBuffer megaBuffer = null;
-  
-  /** The buffer of vertex indices defining the faces. */
-  private ShortBuffer elementBuffer = null;
-  
-  /** 
-   * The number of floats for the attributes of a vertex. 4 position 
-   * coordinates + 4 color coordinates + 3 normal coordinates + 2 texture 
-   * coordinates + 3 tangental coordinates = 16.
-   */
-  private static final int NUM_ATTRIBS = 16;
-  
-  /** Generates and fills the VBOs. */
-  private void genBuffers(GL2 gl) {
-    if(vboDirty) {
-      if(buffers != null) {
-        gl.glDeleteBuffers(buffers.length, buffers, 0);
-      }
-      buffers = new int[2];
-      
-      // Fill the buffers.
-      megaBuffer = FloatBuffer.allocate(vertices.length * NUM_ATTRIBS);
-      elementBuffer = ShortBuffer.allocate(getNumIndices());
-      
-      for(Vertex3f vertex : vertices) {
-        megaBuffer.put(vertex.getCoords());
-        megaBuffer.put(vertex.getColor());
-        megaBuffer.put(vertex.getNormal());
-        megaBuffer.put(vertex.getTexCoords());
-        megaBuffer.put(vertex.getTangental());
-      }
-      for(Face3f face : faces) {
-        elementBuffer.put(new short[] {face.getIndex1(), face.getIndex2(), face.getIndex3()});
-      }
-      
-      // Prepare the buffers to be read.
-      megaBuffer.flip();
-      elementBuffer.flip();
-      
-      // Generate and fill the buffers.
-      gl.glGenBuffers(buffers.length, buffers, 0);
-      
-      gl.glBindBuffer(GL_ARRAY_BUFFER, buffers[0]);
-      gl.glBufferData(GL_ARRAY_BUFFER, 
-                      megaBuffer.capacity()*Buffers.SIZEOF_FLOAT,
-                      megaBuffer,
-                      GL_STATIC_DRAW);
-      
-      gl.glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffers[1]);
-      gl.glBufferData(GL_ELEMENT_ARRAY_BUFFER, 
-                      elementBuffer.capacity()*Buffers.SIZEOF_SHORT,
-                      elementBuffer,
-                      GL_STATIC_DRAW);
-      
-      vboDirty = false;
-    }
-  }
-  
-  
-  
+  //////// Rendering
   
   /** Render the polygon using VBO. (Fast!)*/
   public void render(GL2 gl) {
-    
-    // update the vertex information if necessary.
-    genBuffers(gl);
-    gl.glBindBuffer(GL_ARRAY_BUFFER, buffers[0]);
-    
-    int stride = NUM_ATTRIBS*Buffers.SIZEOF_FLOAT;
-    
-    gl.glEnableClientState(GL_VERTEX_ARRAY);
-    gl.glVertexPointer(4, GL_FLOAT, stride, 0);
-    
-    gl.glEnableClientState(GL_COLOR_ARRAY);
-    gl.glColorPointer(4, GL_FLOAT, stride, 4*Buffers.SIZEOF_FLOAT);
-    
-    gl.glEnableClientState(GL_NORMAL_ARRAY);
-    gl.glNormalPointer(GL_FLOAT, stride, 8*Buffers.SIZEOF_FLOAT);
-    
-    gl.glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-    gl.glTexCoordPointer(2, GL_FLOAT, stride, 11*Buffers.SIZEOF_FLOAT);
-    
-    int tangentalPosition = ShaderLibrary.get().getAttrib(gl, "tangental");
-    gl.glVertexAttribPointer(tangentalPosition, 3, GL_FLOAT, false, stride, 13*Buffers.SIZEOF_FLOAT);
-    gl.glEnableVertexAttribArray(tangentalPosition);
-    
-    // draw!
-    gl.glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffers[1]);
-    gl.glDrawElements( GL_TRIANGLES, elementBuffer.capacity(), GL_UNSIGNED_SHORT, 0);
-  //  gl.glFlush(); // SLOW!
-    
-    // disable arrays once we're done
-    gl.glBindBuffer( GL.GL_ARRAY_BUFFER, 0 );
-    gl.glBindBuffer( GL.GL_ELEMENT_ARRAY_BUFFER, 0 );
-    gl.glDisableClientState( GL_VERTEX_ARRAY );
-    gl.glDisableClientState( GL_COLOR_ARRAY );
-    gl.glDisableClientState( GL_NORMAL_ARRAY );
-    gl.glDisableClientState( GL_TEXTURE_COORD_ARRAY );
+    pipeline.render(gl, faces, vertices);
   }
   
 } 

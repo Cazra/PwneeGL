@@ -29,6 +29,10 @@ package pwneegl.geom;
 ======================================================================*/
 
 import java.nio.FloatBuffer;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import javax.media.opengl.GL;
 import javax.media.opengl.GL2;
 
@@ -40,6 +44,7 @@ import com.jogamp.common.nio.Buffers;
 import pwneegl.math.Point3f;
 import pwneegl.math.PwneeMath;
 import pwneegl.math.Vector3f;
+import pwneegl.shader.Attribute;
 import pwneegl.shader.ShaderLibrary;
 
 /** 
@@ -65,7 +70,14 @@ public class Vertex3f extends Point3f {
    */
   private float[] tangental;
    
-   
+  /** Map of user-defined float attribute locations to their values. */
+  private Map<Integer, float[]> attribsf;
+  
+  /** Map of user-defined int attribute locations to their values. */
+  private Map<Integer, int[]> attribsi;
+  
+  /** Map of user-defined double attribute locations to their values. */
+  private Map<Integer, double[]> attribsd;
   
   
   
@@ -86,6 +98,16 @@ public class Vertex3f extends Point3f {
     texCoords[1] = 0f;
     
     normal = null;
+    tangental = null;
+    
+    attribsf = new HashMap<>();
+    attribsi = new HashMap<>();
+    attribsd = new HashMap<>();
+  }
+  
+  /** Creates the vertex, specifying only its model coordinates. */
+  public Vertex3f(float[] xyz) {
+    this(xyz[0], xyz[1], xyz[2]);
   }
   
   
@@ -107,7 +129,10 @@ public class Vertex3f extends Point3f {
     return color[3];
   }
   
-  /** Produces a copy of the vertex's 4-dimensional rgba color array. */
+  /** 
+   * Produces a copy of the vertex's 4-dimensional rgba color array. 
+   * In shader programs, this result is available for the vertex in gl_Color.
+   */
   public float[] getColor() {
     float[] result = new float[4];
     result[0] = color[0];
@@ -200,7 +225,10 @@ public class Vertex3f extends Point3f {
     return texCoords[1];
   }
   
-  /** Returns the 2-dimension texture coordinates array for this vertex. */
+  /** 
+   * Returns the 2-dimension texture coordinates array for this vertex. 
+   * In shader programs, this result is available for the vertex in gl_MultiTexCoord0.
+   */
   public float[] getTexCoords() {
     float[] result = new float[2];
     result[0] = texCoords[0];
@@ -212,7 +240,10 @@ public class Vertex3f extends Point3f {
   
   //////// vertex normal
   
-  /** Returns the 3-dimensional normal vector array for this vertex. */
+  /** 
+   * Returns the 3-dimensional normal vector array for this vertex. 
+   * In shader programs, this result is available for the vertex in gl_Normal.
+   */
   public float[] getNormal() {
     if(normal == null) {
       return new float[] {1f, 0f, 0f};
@@ -261,71 +292,185 @@ public class Vertex3f extends Point3f {
     this.tangental = new float[] {t[0], t[1], t[2]};
   }
   
-  /** Returns the 3-dimensional tangental vector array for this vertex, or [0,0,0] if it has not been computed. */
+  /** 
+   * Returns the 3-dimensional tangental vector for this vertex, 
+   * or [1,0,0] if it has not been computed. 
+   * This is not a built-in attribute in the OpenGL pipeline. 
+   * The user will need to define a custom vertex attribute in their shader to
+   * use this.
+   */
   public float[] getTangental() {
     if(tangental == null) {
-      tangental = new float[] {0f, 0f, 0f};
+      tangental = new float[] {1f, 0f, 0f};
     }
     return tangental;
   }
   
-  //////// Custom shader-specific attributes
   
-  /** 
-   * Returns an array of the vertex's custom float shader attributes.
-   * The default implementation returns null.
-   * This should be overridden if you plan to use custom shader attributes for 
-   * your vertices. The attributes should be returned in the same order that
-   * their names are registered in the ShaderProgram.
-   */
-  public float[] getAttribs1() {
-    return null;
+  
+  
+  
+  //////// User-defined vertex attributes
+  
+  // Floats
+  
+  /** Sets a single-float attribute. */
+  public void setAttribf(String name, float value) {
+    int attLoc = ShaderLibrary.get().getAttribLocation(name);
+    attribsf.put(attLoc, new float[] {value});
+  }
+  
+  /** Sets a float-based attribute. */
+  public void setAttribfv(String name, float[] values) {
+    int attLoc = ShaderLibrary.get().getAttribLocation(name);
+    attribsf.put(attLoc, values);
   }
   
   /** 
-   * Returns an array of the vertex's custom vec3 shader attributes.
-   * The default implementation returns null.
-   * This should be overridden if you plan to use custom shader attributes for 
-   * your vertices.
+   * Gets the value of a float-based attribute, given its OpenGL location. 
+   * If the vertex has no such attribute, an empty array is returned.
    */
-  public float[][] getAttribs3() {
-    return null;
+  public float[] getAttribf(int loc) {
+    float[] result = attribsf.get(loc);
+    if(result == null) {
+      return new float[0];
+    }
+    else {
+      return result;
+    }
   }
   
   /** 
-   * Returns the number of floats for the attributes of a vertex. 4 position 
-   * coordinates + 4 color coordinates + 3 normal coordinates + 2 texture 
-   * coordinates + 3 tangental coordinates = 16 for just base attributes.
-   * Then add 1 for every float attribute and add 3 for every vec3 attribute.
+   * Gets the value of a float-based attribute, given its name. 
+   * If the vertex has no such attribute, an empty array is returned.
    */
-  public static int getNumAttribs() {
-    int result = 16;
-    result += ShaderLibrary.get().getNumAttribs1();
-    result += ShaderLibrary.get().getNumAttribs3()*3;
+  public float[] getAttribf(String name) {
+    return getAttribf(ShaderLibrary.get().getAttribLocation(name));
+  }
+  
+  /** 
+   * Returns an array of the float-based attributes for this vertex, 
+   * in context to the shader currently in use. 
+   * Any attributes used by the shader that the vertex doesn't have are 
+   * returned as empty arrays.
+   */
+  public float[][] getAttribsf() {
+    List<Attribute> attributes = ShaderLibrary.get().getUserAttribsf();
+    float[][] result = new float[attributes.size()][];
+    for(int i = 0; i < attributes.size(); i++) {
+      result[i] = getAttribf(attributes.get(i).getLocation());
+    }
     return result;
   }
   
-  //////// Rendering
   
-  /** Renders the vertex naiively in GL_POINTS mode. */
-  @Deprecated
-  public void renderOld(GL gl) {
-    GL2 gl2 = gl.getGL2();
-    
-    gl2.glBegin(GL_POINTS);
-    drawOld(gl2);
-    gl2.glEnd();
+  // Ints
+  
+  /** Sets a single-int attribute. */
+  public void setAttribi(String name, int value) {
+    int attLoc = ShaderLibrary.get().getAttribLocation(name);
+    attribsi.put(attLoc, new int[] {value});
+  }
+  
+  /** Sets a int-based attribute. */
+  public void setAttribiv(String name, int[] values) {
+    int attLoc = ShaderLibrary.get().getAttribLocation(name);
+    attribsi.put(attLoc, values);
   }
   
   
-  /** Draws the vertex, assuming glBegin has already been called. */
-  @Deprecated
-  public void drawOld(GL2 gl) {
-    gl.glColor4f(getRed(), getGreen(), getBlue(), getAlpha());
-  //  gl.glNormal3fv(getNormal(), 0);
-    gl.glVertex3f(getX(), getY(), getZ());
+  /** 
+   * Gets the value of a int-based attribute, given its OpenGL location. 
+   * If the vertex has no such attribute, an empty array is returned.
+   */
+  public int[] getAttribi(int loc) {
+    int[] result = attribsi.get(loc);
+    if(result == null) {
+      return new int[0];
+    }
+    else {
+      return result;
+    }
   }
   
+  /** 
+   * Gets the value of a int-based attribute, given its name. 
+   * If the vertex has no such attribute, an empty array is returned.
+   */
+  public int[] getAttribi(String name) {
+    return getAttribi(ShaderLibrary.get().getAttribLocation(name));
+  }
+  
+  /** 
+   * Returns an array of the int-based attributes for this vertex, 
+   * in context to the shader currently in use. 
+   * Any attributes used by the shader that the vertex doesn't have are 
+   * returned as empty arrays.
+   */
+  public int[][] getAttribsi() {
+    List<Attribute> attributes = ShaderLibrary.get().getUserAttribsi();
+    int[][] result = new int[attributes.size()][];
+    for(int i = 0; i < attributes.size(); i++) {
+      result[i] = getAttribi(attributes.get(i).getLocation());
+    }
+    return result;
+  }
+  
+  
+  // Doubles
+  
+  /** Sets a single-double attribute. */
+  public void setAttribd(String name, double value) {
+    int attLoc = ShaderLibrary.get().getAttribLocation(name);
+    attribsd.put(attLoc, new double[] {value});
+  }
+  
+  /** Sets a double-based attribute. */
+  public void setAttribdv(String name, double[] values) {
+    int attLoc = ShaderLibrary.get().getAttribLocation(name);
+    attribsd.put(attLoc, values);
+  }
+  
+  
+  /** 
+   * Gets the value of a double-based attribute, given its OpenGL location. 
+   * If the vertex has no such attribute, an empty array is returned.
+   */
+  public double[] getAttribd(int loc) {
+    double[] result = attribsd.get(loc);
+    if(result == null) {
+      return new double[0];
+    }
+    else {
+      return result;
+    }
+  }
+  
+  /** 
+   * Gets the value of a double-based attribute, given its name. 
+   * If the vertex has no such attribute, an empty array is returned.
+   */
+  public double[] getAttribd(String name) {
+    return getAttribd(ShaderLibrary.get().getAttribLocation(name));
+  }
+  
+  /** 
+   * Returns an array of the double-based attributes for this vertex, 
+   * in context to the shader currently in use. 
+   * Any attributes used by the shader that the vertex doesn't have are 
+   * returned as empty arrays.
+   */
+  public double[][] getAttribsd() {
+    List<Attribute> attributes = ShaderLibrary.get().getUserAttribsd();
+    double[][] result = new double[attributes.size()][];
+    for(int i = 0; i < attributes.size(); i++) {
+      result[i] = getAttribd(attributes.get(i).getLocation());
+    }
+    return result;
+  }
+  
+  
+  //////// Misc
   
   public String toString() {
     return "Vertex3f:(" + getX() + ", " + getY() + "," + getZ() + ")";

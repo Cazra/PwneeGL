@@ -1,6 +1,7 @@
 /** bump map vertex shader with per-fragment Phong lighting. */
 
 attribute vec3 tangental;
+attribute vec3 rainbowbarf;
 
 uniform float time; /* Value provided by the application program. */
 
@@ -22,6 +23,7 @@ void main() {
   tang = normalize(gl_NormalMatrix*tangental);
   
   gl_FrontColor = gl_Color;
+  gl_FrontColor.rgb = rainbowbarf;
   
   gl_TexCoord[0] = gl_MultiTexCoord0;
 }

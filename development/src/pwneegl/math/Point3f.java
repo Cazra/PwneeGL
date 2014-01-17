@@ -67,7 +67,10 @@ public class Point3f {
   }
   
   
-  /** Returns a copy of the underlying 4-dimensional coordinates array. */
+  /** 
+   * Returns a copy of the underlying 4-dimensional coordinates array. 
+   * In shader programs, this result is available for the vertex in gl_Vertex.
+   */
   public float[] getCoords() {
     float[] result = new float[4];
     result[0] = coords[0];

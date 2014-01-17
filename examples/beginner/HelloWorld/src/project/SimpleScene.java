@@ -62,7 +62,7 @@ public class SimpleScene extends GameCanvas {
   public SimpleScene(int fps) {
     super(fps);
     
-    
+    /*
     testCubes = new TestCube[4000];
     
     for(int i = 0; i < 10; i++) {
@@ -76,9 +76,9 @@ public class SimpleScene extends GameCanvas {
         }
       }
     }
+    */
     
-    
-  //  testCubes = new TestCube[] {new TestCube(0,0,-4)};
+    testCubes = new TestCube[] {new TestCube(0,0,-4)};
   
     light =  new LightDirectional(1f, 1f, 1f); //new LightDirectional( -1f, 1f, 1f);
     

@@ -32,6 +32,10 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import javax.media.opengl.GL;
 import javax.media.opengl.GL2;
@@ -50,6 +54,10 @@ import pwneegl.PwneeGLError;
  */
 public class ShaderProgram {
   
+  /** Whether to print debugging information about the shader to the console. */
+  public static boolean printDebug = true;
+  
+  
   /** The path to the loaded vertex shader. */
   private String vertexShaderPath;
   
@@ -65,11 +73,22 @@ public class ShaderProgram {
   /** The index to the shader program object in the OpenGL state. */
   private int shaderProgram;
   
-  /** List of expected float vertex attribute names. */
-  private String[] attrib1Names = new String[0];
   
-  /** List of expected vec3 vertex attribute names. */
-  private String[] attrib3Names = new String[0];
+  /** Dictionary of vertex attributes used in the shader. */
+  private Map<String, Attribute> attributes;
+  
+  /** Dictionary of uniform variables used in the shader. */
+  private Map<String, Uniform> uniforms;
+  
+  /** The number of bytes custom float-based vertex attributes in the shader contribute to the pipeline. */
+  private int attribsfBytes;
+  
+  /** The number of bytes custom int-based vertex attributes in the shader contribute to the pipeline. */
+  private int attribsiBytes;
+  
+  /** The number of bytes custom double-based vertex attributes in the shader contribute to the pipeline. */
+  private int attribsdBytes;
+  
   
   /** 
    * The constructor will read the source files for the shader program and 
@@ -198,14 +217,20 @@ public class ShaderProgram {
   }
   
   
-  /** Populates the list of vertex attributes available to this program. */
+  /** Populates the vertex attribute information for this program. */
   private void initAttribs(GL2 gl) {
     int numAttribs = glGetProgrami(gl, GL_ACTIVE_ATTRIBUTES);
-    System.out.println("Number active attributes: " + numAttribs);
+    debugln("Number active attributes: " + numAttribs);
     
     int maxLength = glGetProgrami(gl, GL_ACTIVE_ATTRIBUTE_MAX_LENGTH);
-    System.out.println("Max attribute name length: " + maxLength);
+    debugln("Max attribute name length: " + maxLength);
     
+    attributes = new HashMap<>();
+    attribsfBytes = 0;
+    attribsiBytes = 0;
+    attribsdBytes = 0;
+    
+    // Create objects to cache the information about the attributes. 
     for(int i = 0; i < numAttribs; i++) {
       int lengthPointer[] = new int[1];
       int sizePointer[] = new int[1];
@@ -220,19 +245,41 @@ public class ShaderProgram {
       int size = sizePointer[0];
       int type = typePointer[0];
       String name = new String(nameBytes).trim();
+      int location = gl.glGetAttribLocation(shaderProgram, name);
       
-      System.out.println("Attrib " + i + ": " + name + ", length " + length + ", size " + size + ", type " + GLNames.glType(type));
+      debugln("Attrib " + i + ": " + name + ", length " + length + ", size " + size + ", type " + GLNames.glName(type) + ", location " + location);
+      Attribute att = new Attribute(name, size, type, location);
+      attributes.put(name, att);
+      
+      // Add up the number of bytes each user-defined attribute contributes to the pipeline.
+      if(att.isUserDefined()) {
+        if(att.getUnitType() == GL_FLOAT) {
+          attribsfBytes += att.getSizeBytes();
+        }
+        else if(att.getUnitType() == GL_INT) {
+          attribsiBytes += att.getSizeBytes();
+        }
+        else if(att.getUnitType() == GL_DOUBLE){
+          attribsdBytes += att.getSizeBytes();
+        }
+      }
     }
   }
   
-  /** Populates the list of uniforms available to this program. */
+  
+  
+  
+  /** Populates the uniform variables information for this program. */
   private void initUniforms(GL2 gl) {
     int numUnis = glGetProgrami(gl, GL_ACTIVE_UNIFORMS);
-    System.out.println("Number active uniforms: " + numUnis);
+    debugln("Number active uniforms: " + numUnis);
     
     int maxLength = glGetProgrami(gl, GL_ACTIVE_UNIFORM_MAX_LENGTH);
-    System.out.println("Max uniform name length: " + maxLength);
+    debugln("Max uniform name length: " + maxLength);
     
+    uniforms = new HashMap<>();
+    
+    // Create objects to cache the information about the uniforms.
     for(int i = 0; i < numUnis; i++) {
       int lengthPointer[] = new int[1];
       int sizePointer[] = new int[1];
@@ -248,10 +295,34 @@ public class ShaderProgram {
       int type = typePointer[0];
       String name = new String(nameBytes).trim();
       
-      System.out.println("Uniform " + i + ": " + name + ", length " + length + ", size " + size + ", type " + GLNames.glType(type));
+      debugln("Uniform " + i + ": " + name + ", length " + length + ", size " + size + ", type " + GLNames.glName(type));
+      uniforms.put(name, new Uniform(name, size, type));
     }
   }
   
+  /** 
+   * Returns the number of bytes that user-defined float-based vertex
+   * attributes are expected to contribute to the stride of the pipeline.
+   */
+  public int getPipelineStridef() {
+    return attribsfBytes;
+  }
+  
+  /** 
+   * Returns the number of bytes that user-defined int-based vertex
+   * attributes are expected to contribute to the stride of the pipeline.
+   */
+  public int getPipelineStridei() {
+    return attribsiBytes;
+  }
+  
+  /** 
+   * Returns the number of bytes that user-defined double-based vertex
+   * attributes are expected to contribute to the stride of the pipeline.
+   */
+  public int getPipelineStrided() {
+    return attribsdBytes;
+  }
   
   
   /** Removes the shader program from graphics memory. */
@@ -260,45 +331,7 @@ public class ShaderProgram {
   }
   
   
-  
-  //////// program/pointer indices
-  
-  /** Returns the GL index for the shader program object. */
-  public int getProgram() {
-    return shaderProgram;
-  }
-  
-  /** Returns the GL index for the vertex shader. */
-  public int getVertexShader() {
-    return vShader;
-  }
-  
-  /** Returns the GL index for the fragment shader. */
-  public int getFragmentShader() {
-    return fShader;
-  }
-  
   //////// Debug info
-  
-  /** Returns a parameter for the vertex shader. */
-  public int glGetVertexShaderi(GL2 gl, int pname) {
-    return glGetShaderi(gl, vShader, pname);
-  }
-  
-  /** Returns the information log for the vertex shader. */
-  public String glGetVertexShaderInfoLog(GL2 gl) {
-    return glGetShaderInfoLog(gl, vShader);
-  }
-  
-  /** Returns a parameter for the fragment shader. */
-  public int glGetFragmentShaderi(GL2 gl, int pname) {
-    return glGetShaderi(gl, fShader, pname);
-  }
-  
-  /** Returns the information log for the fragment shader. */
-  public String glGetFragmentShaderInfoLog(GL2 gl) {
-    return glGetShaderInfoLog(gl, fShader);
-  }
   
   /** Returns a parameter for the program object. */
   public int glGetProgrami(GL2 gl, int pname) {
@@ -317,75 +350,225 @@ public class ShaderProgram {
   }
   
   
-  //////// Shader vertex attributes and uniform variables
-  
-  /** 
-   * Sets the list of names of float vertex attributes expected in the shader 
-   * program, in the order that they should go through the pipeline. 
-   */
-  private void _setAttrib1Names(String[] names) {
-    attrib1Names = names;
-  }
-  
-  /** 
-   * Returns the list of names of the float vertex attributes expected in the 
-   * shader, in the order that they should go through the pipeline.
-   */
-  public String[] getAttrib1Names() {
-    return new String[attrib1Names.length];
-  }
-  
-  /** Returns the number of float vertex attributes expected in the shader. */
-  public int getNumAttribs1() {
-    return attrib1Names.length;
+  public void debugln(String str) {
+    if(printDebug) {
+      System.err.println(str);
+    }
   }
   
   
-  /** 
-   * Sets the list of names of vec3 vertex attributes expected in the shader 
-   * program, in the order that they should go through the pipeline. 
-   */
-  private void _setAttrib3Names(String[] names) {
-    attrib3Names = names;
-  }
-  
-  /**
-   * Returns the list of names of the vec3 vertex attributes expected in the 
-   * shader, in the order that they should go through the pipeline.
-   */
-  public String[] getAttrib3Names() {
-    return new String[attrib3Names.length];
-  }
-  
-  /** Returns the number of vec3 vertex attributes expected in the shader. */
-  public int getNumAttribs3() {
-    return attrib3Names.length;
-  }
+  //////// Vertex Attributes
   
   
   /** Returns the index to a vertex attribute specified in the shader program. */
-  public int getAttrib(GL2 gl, String name) {
+  public int getAttribLocation(GL2 gl, String name) {
     return gl.glGetAttribLocation(shaderProgram, name);
   }
   
   
+  public int getAttribLocation(String name) {
+    Attribute att = attributes.get(name);
+    if(att != null) {
+      return att.getLocation();
+    }
+    else {
+      return 0;
+    }
+  }
+  
+  
+  /** Returns information about a vertex attribute used by this shader. */
+  public Attribute getAttrib(String name) {
+    Attribute result = attributes.get(name);
+    if(result == null) {
+      throw new PwneeGLError("Vertex attribute " + name + " isn't used in this shader.");
+    }
+    return attributes.get(name);
+  }
+  
+  
+  /** Return true iff the manager has the specified attribute. */
+  public boolean hasAttribute(String name) {
+    return attributes.containsKey(name);
+  }
+  
+  
+  /** Returns the list of user-defined vertex attributes for this shader. */
+  public List<Attribute> getUserAttribs() {
+    List<Attribute> result = new ArrayList<>();
+    for(Attribute att : attributes.values()) {
+      if(att.isUserDefined()) {
+        result.add(att);
+      }
+    }
+    return result;
+  }
+  
+  /** Returns the list of user-defined float-based attributes for this shader. */
+  public List<Attribute> getUserAttribsf() {
+    List<Attribute> result = new ArrayList<>();
+    for(Attribute att : attributes.values()) {
+      if(att.isUserDefined() && att.getUnitType() == GL_FLOAT) {
+        result.add(att);
+      }
+    }
+    return result;
+  }
+  
+  /** Returns the list of user-defined int-based attributes for this shader. */
+  public List<Attribute> getUserAttribsi() {
+    List<Attribute> result = new ArrayList<>();
+    for(Attribute att : attributes.values()) {
+      if(att.isUserDefined() && (att.getUnitType() == GL_INT || att.getUnitType() == GL_UNSIGNED_INT)) {
+        result.add(att);
+      }
+    }
+    return result;
+  }
+  
+  /** Returns the list of user-defined double-based attributes for this shader. */
+  public List<Attribute> getUserAttribsd() {
+    List<Attribute> result = new ArrayList<>();
+    for(Attribute att : attributes.values()) {
+      if(att.isUserDefined() && att.getUnitType() == GL_DOUBLE) {
+        result.add(att);
+      }
+    }
+    return result;
+  }
+  
+  
+  
+  
+  //////// Uniform variables
+  
   /** Returns the index to a uniform attribute specified in the shader program. */
-  public int getUniform(GL2 gl, String name) {
+  public int getUniformLocation(GL2 gl, String name) {
     return gl.glGetUniformLocation(shaderProgram, name);
   }
   
   
-  /** Sets the value for some uniform variable in the shader. */
+  
+  /** Returns information about a uniform variable used by this shader. */
+  public Uniform getUniform(String name) {
+    Uniform result = uniforms.get(name);
+    if(result == null) {
+      throw new PwneeGLError("Uniform variable " + name + " isn't used in this shader.");
+    }
+    return uniforms.get(name);
+  }
+  
+  
+  /** Returns the list of user-defined uniform variables for this shader. */
+  public List<Uniform> getCustomUniforms() {
+    List<Uniform> result = new ArrayList<>();
+    for(Uniform uni : uniforms.values()) {
+      if(uni.isUserDefined()) {
+        result.add(uni);
+      }
+    }
+    return result;
+  }
+  
+  
+  
+  /** Sets the value for some uniform float variable in the shader. */
   public void setUniformf(GL2 gl, String name, float value) {
-    int uniLoc = getUniform(gl, name);
+    int uniLoc = getUniformLocation(gl, name);
     gl.glUniform1f(uniLoc, value);
   }
   
-  /** Sets the value for some uniform variable in the shader. */
+  /** Sets the value for some uniform float variable in the shader. */
+  public void setUniformfv(GL2 gl, String name, float[] values) {
+    int size = values.length;
+    int loc = getUniformLocation(gl, name);
+    if(size == 1) {
+      gl.glUniform1fv(loc, 1, values, 0);
+    }
+    else if(size == 2) {
+      gl.glUniform2fv(loc, 2, values, 0);
+    }
+    else if(size == 3) {
+      gl.glUniform3fv(loc, 3, values, 0);
+    }
+    else if(size == 4) {
+      gl.glUniform4fv(loc, 4, values, 0);
+    }
+    else {
+      throw new PwneeGLError("Size of float array not supported.");
+    }
+  }
+  
+  
+  
+  
+  /** Sets the value for some uniform int variable in the shader. */
   public void setUniformi(GL2 gl, String name, int value) {
-    int uniLoc = getUniform(gl, name);
+    int uniLoc = getUniformLocation(gl, name);
     gl.glUniform1i(uniLoc, value);
   }
+  
+  /** Sets the value for some uniform int variable in the shader. */
+  public void setUniformiv(GL2 gl, String name, int[] values) {
+    int size = values.length;
+    int loc = getUniformLocation(gl, name);
+    if(size == 1) {
+      gl.glUniform1iv(loc, 1, values, 0);
+    }
+    else if(size == 2) {
+      gl.glUniform2iv(loc, 2, values, 0);
+    }
+    else if(size == 3) {
+      gl.glUniform3iv(loc, 3, values, 0);
+    }
+    else if(size == 4) {
+      gl.glUniform4iv(loc, 4, values, 0);
+    }
+    else {
+      throw new PwneeGLError("Size of float array not supported.");
+    }
+  }
+  
+  
+  
+  
+  /** Sets the value for some uniform unsigned int variable in the shader. */
+  public void setUniformui(GL2 gl, String name, int value) {
+    int uniLoc = getUniformLocation(gl, name);
+    gl.getGLES3().glUniform1ui(uniLoc, value);
+  }
+  
+  /** Sets the value for some uniform unsigned int variable in the shader. */
+  public void setUniformuiv(GL2 gl, String name, int[] values) {
+    int size = values.length;
+    int loc = getUniformLocation(gl, name);
+    if(size == 1) {
+      gl.getGLES3().glUniform1uiv(loc, 1, values, 0);
+    }
+    else if(size == 2) {
+      gl.getGLES3().glUniform2uiv(loc, 2, values, 0);
+    }
+    else if(size == 3) {
+      gl.getGLES3().glUniform3uiv(loc, 3, values, 0);
+    }
+    else if(size == 4) {
+      gl.getGLES3().glUniform4uiv(loc, 4, values, 0);
+    }
+    else {
+      throw new PwneeGLError("Size of float array not supported.");
+    }
+  }
+  
+  
+  // TODO : Matrix support
+  
+  
+  
+  /** Return true iff the manager has the specified uniform. */
+  public boolean hasUniform(String name) {
+    return uniforms.containsKey(name);
+  }
+  
   
   //////// Apply
   
