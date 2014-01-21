@@ -57,18 +57,8 @@ public class ShaderProgram {
   /** Whether to print debugging information about the shader to the console. */
   public static boolean printDebug = true;
   
-  
-  /** The path to the loaded vertex shader. */
-  private String vertexShaderPath;
-  
-  /** The path to the loaded fragment shader. */
-  private String fragmentShaderPath;
-  
-  /** The index to the vertex shader in the OpenGL state. */
-  private int vShader;
-  
-  /** The index to the fragment shader in the OpenGL state. */
-  private int fShader;
+  /** A mapping of shader types in this program to the paths of the shader source files. */
+  private Map<Integer, String> shaderPaths;
   
   /** The index to the shader program object in the OpenGL state. */
   private int shaderProgram;
@@ -91,39 +81,80 @@ public class ShaderProgram {
   
   
   /** 
-   * The constructor will read the source files for the shader program and 
-   * initialize them in the OpenGL context. 
+   * Constructs the shader program from the provided source files mapped by 
+   * their shader types. This allows a program utilizing any combination of the 
+   * 6 supported OpenGL shader types to be created.
+   * The types include GL_COMPUTE_SHADER, GL_VERTEX_SHADER, 
+   * GL_TESS_CONTROL_SHADER, GL_TESS_EVALUATION_SHADER, GL_GEOMETRY_SHADER,
+   * and GL_FRAGMENT_SHADER.
+   */
+  public ShaderProgram(GL2 gl, Map<Integer, String> shaderPaths, boolean loadAsResources) {
+    init(gl, shaderPaths, loadAsResources);
+  }
+  
+  /** 
+   * Constructs the shader program from the provided source files and their  
+   * corresponding shader types. This allows a program utilizing any 
+   * combination of the 6 supported OpenGL shader types to be created.
+   * The types include GL_COMPUTE_SHADER, GL_VERTEX_SHADER, 
+   * GL_TESS_CONTROL_SHADER, GL_TESS_EVALUATION_SHADER, GL_GEOMETRY_SHADER,
+   * and GL_FRAGMENT_SHADER.
+   */
+  public ShaderProgram(GL2 gl, int[] shaderTypes, String[] paths, boolean loadAsResources) {
+    Map<Integer, String> shaderPaths = new HashMap<>();
+    for(int i = 0; i < shaderTypes.length; i++) {
+      shaderPaths.put(shaderTypes[i], paths[i]);
+    }
+    init(gl, shaderPaths, loadAsResources);
+  }
+  
+  /** 
+   * Creates the shader program from the specified vertex and fragment shader source files.
    */
   public ShaderProgram(GL2 gl, String vertexShaderPath, String fragmentShaderPath, boolean loadAsResources) {
-    this.vertexShaderPath = vertexShaderPath;
-    this.fragmentShaderPath = fragmentShaderPath;
+    Map<Integer, String> shaderPaths = new HashMap<>();
+    shaderPaths.put(GL_VERTEX_SHADER, vertexShaderPath);
+    shaderPaths.put(GL_FRAGMENT_SHADER, fragmentShaderPath);
+    init(gl, shaderPaths, loadAsResources);
+  }
+  
+  /** Read the shader program from the specified external vertex and fragment shader source files. */
+  public ShaderProgram(GL2 gl, String vertexShaderPath, String fragmentShaderPath) {
+    this(gl, vertexShaderPath, fragmentShaderPath, false);
+  }  
+  
+  
+  /** Initialization steps common to all the ShaderProgram constructors. */
+  private void init(GL2 gl, Map<Integer, String> shaderPaths, boolean loadAsResources) {
+    this.shaderPaths = new HashMap<>(shaderPaths);
+    List<Integer> shaders = new ArrayList<>();
     
     try {
-      vShader = compileShader(gl, GL_VERTEX_SHADER, vertexShaderPath, loadAsResources);
-      fShader = compileShader(gl, GL_FRAGMENT_SHADER, fragmentShaderPath, loadAsResources);
-      shaderProgram = gl.glCreateProgram();
+      // Compile any provided shaders.
+      for(int shaderType: shaderPaths.keySet()) {
+        shaders.add(compileShader(gl, shaderType, shaderPaths.get(shaderType), loadAsResources));
+      } 
       
-      glAttachShaders(gl);
+      // Combine the shaders into the shader program.
+      shaderProgram = gl.glCreateProgram();
+      glAttachShaders(gl, shaders);
       glLinkProgram(gl);
       glValidateProgram(gl);
       
+      // Initialize the metadata for user-defined vertex attributes and uniform variables.
       initAttribs(gl);
       initUniforms(gl);
       
       // Once the program is built, we can delete the shaders to save memory.
       // The compiled shaders won't actually be deleted until the program is deleted. 
-      gl.glDeleteShader(vShader);
-      gl.glDeleteShader(fShader);
+      for(int shaderIndex : shaders) {
+        gl.glDeleteShader(shaderIndex);
+      }
     }
     catch(Exception e) {
       e.printStackTrace();
     }
   }
-  
-  /** Read the shader program from the specified external files. */
-  public ShaderProgram(GL2 gl, String vertexShaderPath, String fragmentShaderPath) {
-    this(gl, vertexShaderPath, fragmentShaderPath, false);
-  }  
   
   
   
@@ -170,9 +201,10 @@ public class ShaderProgram {
   /** 
    * Attempts to attach the vertex and fragment shaders to the shader program object. 
    */
-  private void glAttachShaders(GL2 gl) {
-    gl.glAttachShader(shaderProgram, vShader);
-    gl.glAttachShader(shaderProgram, fShader);
+  private void glAttachShaders(GL2 gl, List<Integer> shaders) {
+    for(int shaderIndex : shaders) {
+      gl.glAttachShader(shaderProgram, shaderIndex);
+    }
   }
   
   

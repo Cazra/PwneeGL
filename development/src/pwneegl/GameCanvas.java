@@ -82,6 +82,7 @@ public abstract class GameCanvas extends GLCanvas implements GLEventListener {
     initListeners();
   }
   
+  /** Creates the GameCanvas with a FPSAnimator. */
   public GameCanvas(int fps) {
     this(new GLCapabilities(GLProfile.getDefault()), fps);
   }
@@ -94,6 +95,7 @@ public abstract class GameCanvas extends GLCanvas implements GLEventListener {
     initListeners();
   }
   
+  /** Creates the GameCanvas with a Animator (not FPS-driven). */
   public GameCanvas() {
     this(new GLCapabilities(GLProfile.getDefault()));
   }
@@ -111,7 +113,7 @@ public abstract class GameCanvas extends GLCanvas implements GLEventListener {
   
   //////// Animation state and control
   
-  /** Starts animating the game. */
+  /** Starts animating the game. Call this after the game has been fully constructed. */
   public void start() {
     animator.start();
     requestFocus();
@@ -218,9 +220,8 @@ public abstract class GameCanvas extends GLCanvas implements GLEventListener {
   
   //////// Game model update
   
-  public void update() {
-    // Override me and call super.update().
-    
+  /** Polls the mouse and keyboard, then performs the game logic for 1 frame. Override me! */
+  public void update() { 
     // Poll for the mouse/keyboard state since the last frame.
     mouse.poll();
     keyboard.poll();
@@ -230,6 +231,7 @@ public abstract class GameCanvas extends GLCanvas implements GLEventListener {
   
   //////// Rendering
   
+  /** Clears the OpenGL buffers for the view, then renders the game. Override me! */
   public void render(GLAutoDrawable drawable) {
     
     // Override me and call super.render(drawable).

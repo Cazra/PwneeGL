@@ -56,12 +56,22 @@ public class PwneeMath {
     // Easier to convert using a unit vector.
     v = v.normalize();
     
-    float thetaX = (float) Math.asin(v.getY());
+    // Get the angles.
+    float thetaX = (float) Math.asin(clamp(v.getY(), -1f, 1f));
     float thetaY = 0f;
-    
-    float u = (float) Math.cos(thetaX);
-    if(u != 0) {
-      thetaY = (float) Math.acos(v.getX()/u);
+    if(x == 0) {
+      if(z > 0) {
+        thetaY = TAU*0.75f;
+      }
+      else {
+        thetaY = TAU*0.25f;
+      }
+    }
+    else {
+      thetaY = (float) Math.atan(-z/x);
+      if(x < 0) {
+        thetaY = thetaY + TAU/2;
+      }
     }
     
     return new float[] {length, thetaX, thetaY};
@@ -75,7 +85,6 @@ public class PwneeMath {
     float x = radius * FloatUtil.cos(thetaY)*FloatUtil.cos(thetaX);
     float y = radius * FloatUtil.sin(thetaX);
     float z = 0 - radius * FloatUtil.sin(thetaY)*FloatUtil.cos(thetaX);
-    
     return new float[] {x, y, z};
   }
   
@@ -90,6 +99,17 @@ public class PwneeMath {
   /** Restricts some floating point value to be within the given [min, max] range. */
   public static float clamp(float coeff, float min, float max) {
     return (float) Math.min(Math.max(coeff, min), max);
+  }
+  
+  /** Wraps some floating point value to be within the given [min, max) range. */
+  public static float wrap(float coeff, float min, float max) {
+    float diff = max - min;
+    float result = coeff % diff;
+    if(result < 0) {
+      result += diff;
+    }
+    result += min;
+    return result;
   }
   
   

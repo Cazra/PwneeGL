@@ -16,6 +16,7 @@ import static javax.media.opengl.GL2.*; // GL2 constants
 
 import com.jogamp.opengl.math.FloatUtil;
 
+import pwneegl.camera.ArcBall;
 import pwneegl.GameCanvas;
 import pwneegl.GameWindow;
 import pwneegl.geom.Poly3f;
@@ -25,6 +26,7 @@ import pwneegl.light.Light;
 import pwneegl.light.LightDirectional;
 import pwneegl.light.LightPoint;
 import pwneegl.light.LightSpot;
+import pwneegl.math.Point3f;
 import pwneegl.math.PwneeMath;
 import pwneegl.shader.ShaderLibrary;
 import pwneegl.shader.ShaderProgram;
@@ -54,6 +56,8 @@ public class SimpleScene extends GameCanvas {
   
   private Fog fog;
   
+  private ArcBall arcBall;
+  
   //////// Shader-specific vars
   
   private float time;
@@ -63,6 +67,7 @@ public class SimpleScene extends GameCanvas {
     super(fps);
     
     /*
+    // Performance test: render 4000 sprites!
     testCubes = new TestCube[4000];
     
     for(int i = 0; i < 10; i++) {
@@ -78,12 +83,15 @@ public class SimpleScene extends GameCanvas {
     }
     */
     
+    // Simple test: Render just 1 sprite.
     testCubes = new TestCube[] {new TestCube(0,0,-4)};
   
     light =  new LightDirectional(1f, 1f, 1f); //new LightDirectional( -1f, 1f, 1f);
     
     fog = new Fog(0f, 0f, 0.5f);
     fog.setDensity(0.05f);
+    
+    arcBall = new ArcBall(new Point3f(0f, 0f, 4f), new Point3f(0f, 0f, -4f), this);
     
     time = 0f;
     
@@ -98,7 +106,10 @@ public class SimpleScene extends GameCanvas {
     GL2 gl = drawable.getGL().getGL2();
     
     // Use our shader program.
-    ShaderLibrary.put("shader", new ShaderProgram(gl, "bumpVShader.glsl", "bumpFShader.glsl", true));
+    ShaderLibrary.put("shader", new ShaderProgram(gl, 
+        new int[]     {GL_VERTEX_SHADER,    GL_FRAGMENT_SHADER}, 
+        new String[]  {"bumpVShader.glsl",  "bumpFShader.glsl"}, 
+        true));
     ShaderLibrary.use(gl, "shader");
   }
   
@@ -108,6 +119,7 @@ public class SimpleScene extends GameCanvas {
   /** Animate one frame. */
   public void update() {
     super.update();
+    arcBall.doMouseControl(mouse);
     
     time += 0.01f;
     
@@ -162,6 +174,8 @@ public class SimpleScene extends GameCanvas {
     shader.setUniformf(gl, "time", time);
     
     gl.glLoadIdentity(); // reset the model-view matrix.
+    
+    arcBall.glCamera(gl, glu, this.getWidth(), this.getHeight());
     
     light.glLight(gl, 0);
     fog.glFog(gl);

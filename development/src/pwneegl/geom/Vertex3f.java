@@ -41,6 +41,7 @@ import static javax.media.opengl.GL2.*; // GL2 constants
 
 import com.jogamp.common.nio.Buffers;
 
+import pwneegl.PwneeGLError;
 import pwneegl.math.Point3f;
 import pwneegl.math.PwneeMath;
 import pwneegl.math.Vector3f;
@@ -328,12 +329,12 @@ public class Vertex3f extends Point3f {
   
   /** 
    * Gets the value of a float-based attribute, given its OpenGL location. 
-   * If the vertex has no such attribute, an empty array is returned.
+   * If the vertex has no such attribute, a PwneeGLError is thrown.
    */
   public float[] getAttribf(int loc) {
     float[] result = attribsf.get(loc);
     if(result == null) {
-      return new float[0];
+      throw new PwneeGLError("Vertex does not have user-defined attribute at location: " + loc);
     }
     else {
       return result;
@@ -381,12 +382,12 @@ public class Vertex3f extends Point3f {
   
   /** 
    * Gets the value of a int-based attribute, given its OpenGL location. 
-   * If the vertex has no such attribute, an empty array is returned.
+   * If the vertex has no such attribute, a PwneeGLError is thrown.
    */
   public int[] getAttribi(int loc) {
     int[] result = attribsi.get(loc);
     if(result == null) {
-      return new int[0];
+      throw new PwneeGLError("Vertex does not have user-defined attribute at location: " + loc);
     }
     else {
       return result;
@@ -434,12 +435,12 @@ public class Vertex3f extends Point3f {
   
   /** 
    * Gets the value of a double-based attribute, given its OpenGL location. 
-   * If the vertex has no such attribute, an empty array is returned.
+   * If the vertex has no such attribute, a PwneeGLError is thrown.
    */
   public double[] getAttribd(int loc) {
     double[] result = attribsd.get(loc);
     if(result == null) {
-      return new double[0];
+      throw new PwneeGLError("Vertex does not have user-defined attribute at location: " + loc);
     }
     else {
       return result;

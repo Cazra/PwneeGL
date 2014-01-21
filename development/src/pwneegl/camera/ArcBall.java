@@ -49,32 +49,75 @@ import com.jogamp.opengl.math.FloatUtil;
 import com.jogamp.opengl.util.AnimatorBase;
 import com.jogamp.opengl.util.FPSAnimator;
 
-import pwneegl.math.Vector3f;
-
 import static javax.media.opengl.GL.*;  // GL constants
 import static javax.media.opengl.GL2.*; // GL2 constants
+
+import pwneegl.input.Mouse;
+import pwneegl.math.Point3f;
+import pwneegl.math.PwneeMath;
+import pwneegl.math.Vector3f;
+
 
 /** 
  * A unit sphere used for camera manipulation. 
  * The arc ball is centered in its parent viewport and has a diameter equal 
  * to the viewport's height.
  */
-public class ArcBall {
+public class ArcBall extends Camera3D {
   
   public Component viewport;
   
   private float startAngleX = 0f;
   private float startAngleY = 0f;
   
-  public ArcBall(Component viewport) {
+  private float radius;
+  
+  public ArcBall(Point3f eye, Point3f look, Component viewport) {
+    super(eye);
+    setLookPoint(look);
+    radius = getLookVector().length();
     this.viewport = viewport;
   }
+  
+  
+  /** Controls the arcball with mouse input. */
+  public void doMouseControl(Mouse mouse) {
+    if(isGestureStart(mouse)) {
+      beginDrag(mouse.x, mouse.y);
+    }
+    else if(isGestureDrag(mouse)) {
+      drag(mouse.x, mouse.y);
+    }
+  }
+  
+  
+  /** 
+   * Returns true if the mouse input is performing some gesture to begin 
+   * dragging the arcball. By default, this returns true when the user 
+   * begins holding the left mouse button. Override this if you want some 
+   * other mouse gesture.
+   */
+  public boolean isGestureStart(Mouse mouse) {
+    return mouse.justLeftPressed;
+  }
+  
+  /** 
+   * Returns true if the mouse input is performing some gesture to continue 
+   * dragging the arball. By default, this returns true when the user 
+   * holds the left mouse button. Override this if you want some 
+   * other mouse gesture.
+   */
+  public boolean isGestureDrag(Mouse mouse) {
+    return mouse.isLeftPressed;
+  }
+  
+  
   
   /** 
    * Converts view coords into radial coords on the surface of the arc ball. 
    * This is returned as the array [angleX, angleY].
    */
-  public float[] view2RadCoords(int x, int y) {
+  private float[] mouse2SphereCoords(int x, int y) {
     int r = viewport.getHeight()/2;
     int cx = viewport.getWidth()/2;
     int cy = viewport.getHeight()/2;
@@ -91,32 +134,41 @@ public class ArcBall {
     }
     
     // compute the radial coordinates on the arc ball's virtual unit sphere.
-    float angleX = (float) Math.asin(v.getY());
-    float angleY = (float) Math.acos(v.getX()/Math.cos(angleX));
-    float[] result = new float[2]; 
-    result[0] = angleX;
-    result[1] = angleY;
     
-    return result;
+    
+    float angleX = (float) Math.asin(PwneeMath.clamp(v.getY(), -1, 1));
+    float angleY = 0f;
+    float u = (float) Math.cos(angleX);
+    if(u != 0) {
+      angleY = (float) Math.acos(PwneeMath.clamp(v.getX()/u, -1, 1));
+    }
+    
+    return new float[] {angleX, angleY};
   }
   
   /** Begin dragging the arc ball from the specified coordinates.*/
-  public void beginDrag(int x, int y) {
-    float[] angles = view2RadCoords(x, y);
+  private void beginDrag(int mouseX, int mouseY) {
+    float[] angles = mouse2SphereCoords(mouseX, mouseY);
     startAngleX = angles[0];
     startAngleY = angles[1];
   }
   
   /** Drag the arc ball and return the change in the x and y angles. */
-  public float[] drag(int x, int y) {
-    float[] angles = view2RadCoords(x, y);
-    float[] result = new float[2]; 
-    result[0] = angles[0] - startAngleX;
-    result[1] = angles[1] - startAngleY;
+  private void drag(int mouseX, int mouseY) {
+    Vector3f look = getLookVector().negate();
+    float[] lookRadial = PwneeMath.toRadial(look.getX(), look.getY(), look.getZ());
+    float angleX = lookRadial[1];
+    float angleY = lookRadial[2];
     
-    startAngleX = angles[0];
-    startAngleY = angles[1];
+    float[] arcAngles = mouse2SphereCoords(mouseX, mouseY);
+    float dx = arcAngles[0] - startAngleX;
+    float dy = arcAngles[1] - startAngleY;
     
-    return result;
+    startAngleX = arcAngles[0];
+    startAngleY = arcAngles[1];
+    
+    angleX += dx;
+    angleY += dy;
+    setEyeRadialCoords(radius, angleX, angleY);
   }
 }

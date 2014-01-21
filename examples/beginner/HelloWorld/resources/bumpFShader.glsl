@@ -42,6 +42,6 @@ void main() {
   // material color
   vec4 color = texture2D(texMap, gl_TexCoord[0].st) + gl_Color;
   
-  //gl_FragColor = color;
-  gl_FragColor = specular + diffuse*color + ambient; // vec4((n+1)/2,1); // diffuse*color + ambient;
+  // Final computed color
+  gl_FragColor = specular + diffuse*color + ambient; 
 }
