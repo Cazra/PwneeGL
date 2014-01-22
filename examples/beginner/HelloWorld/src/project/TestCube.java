@@ -15,6 +15,8 @@ import com.jogamp.common.nio.Buffers;
 import pwneegl.geom.Poly3f;
 import pwneegl.geom.Shapes;
 import pwneegl.geom.Vertex3f;
+import pwneegl.geom.io.WavefrontIO;
+import pwneegl.geom.util.VertexUtils;
 import pwneegl.material.Material;
 import pwneegl.material.MaterialLibrary;
 import pwneegl.material.TexturedMaterial;
@@ -50,6 +52,7 @@ public class TestCube extends Sprite3f {
   @Override
   public void draw(GL2 gl) {
     
+    // gl.glDisable(GL_CULL_FACE); // disable for teapot.obj. Its faces are defined backwards.
     ShaderLibrary.get().setUniformi(gl, "useBump", 1);
     MaterialLibrary.use(gl, "testCube", "texMap");
     MaterialLibrary.use(gl, "testCubeBump", "bumpMap");
@@ -59,7 +62,9 @@ public class TestCube extends Sprite3f {
   
   private static Poly3f getShape() {
     if(shape == null) {
-      shape = Shapes.makeSphere(20, 20); // Shapes.makeSphere(20, 20); // Shapes.makeCube(); // Shapes.makeRect(4f, 3f); // Shapes.makeCylinder(20);
+      shape =  WavefrontIO.readFromResource("d20.obj"); // WavefrontIO.readFromResource("teapot.obj"); // Shapes.makeSphere(20, 20); // Shapes.makeCube(); // Shapes.makeRect(4f, 3f); // Shapes.makeCylinder(20);
+      VertexUtils.genNormalsSphere(shape);
+    //  VertexUtils.genTexCoordsSphere(shape);
       
       // Assign the vertices their tangental attributes. 
       for(Vertex3f vertex : shape.getVertices()) {

@@ -199,21 +199,15 @@ public class Vertex3f extends Point3f {
   //////// Texture coordinates
   
   /** Set texture coordinates for a single texture. */
+  public void setTexCoords(float[] st) {
+    texCoords[0] = st[0];
+    texCoords[1] = st[1];
+  }
+  
+  /** Set texture coordinates for a single texture. */
   public void setTexCoords(float s, float t) {
     texCoords[0] = s;
     texCoords[1] = t;
-  }
-  
-  /** Set texture coordinates for double-texturing. */
-  public void setTexCoords(float s1, float t1, float s2, float t2) {
-    if(texCoords.length < 4) {
-      texCoords = new float[4];
-    }
-    
-    texCoords[0] = s1;
-    texCoords[1] = t1;
-    texCoords[2] = s2;
-    texCoords[3] = t2;
   }
   
   /** Returns the S texture coordinate of the vertex. */

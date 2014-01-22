@@ -121,6 +121,13 @@ public class SimpleScene extends GameCanvas {
     super.update();
     arcBall.doMouseControl(mouse);
     
+    if(mouse.wheel > 0) {
+      arcBall.setDistance(arcBall.getDistance()*(5f/4));
+    }
+    if(mouse.wheel < 0) {
+      arcBall.setDistance(arcBall.getDistance()*(4f/5));
+    }
+    
     time += 0.01f;
     
     // keyboard controls for the cube's angle.
@@ -155,7 +162,6 @@ public class SimpleScene extends GameCanvas {
       testCube.angleX += cubeSpeedX;
       testCube.angleY += cubeSpeedY;
       testCube.angleZ += cubeSpeedZ;
-      testCube.scaleUni = scale;
     }
     
     

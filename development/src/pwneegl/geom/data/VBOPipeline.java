@@ -46,7 +46,7 @@ public class VBOPipeline {
   private DoubleBuffer attribdBuffer = null;
   
   /** The buffer of vertex indices defining the faces. */
-  private ShortBuffer elementBuffer = null;
+  private IntBuffer elementBuffer = null;
   
   
   /** 
@@ -276,16 +276,16 @@ public class VBOPipeline {
     int numIndices = faces.size()*3;
     
     // Fill the buffer
-    elementBuffer = ShortBuffer.allocate(numIndices);
+    elementBuffer = IntBuffer.allocate(numIndices);
     for(Face3f face : faces) {
-      elementBuffer.put(new short[] {face.getIndex1(), face.getIndex2(), face.getIndex3()});
+      elementBuffer.put(new int[] {face.getIndex1(), face.getIndex2(), face.getIndex3()});
     }
     elementBuffer.flip();
     
     // Load the buffer data into graphics memory.
     gl.glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, glLoc);
     gl.glBufferData(GL_ELEMENT_ARRAY_BUFFER, 
-                    elementBuffer.capacity()*Buffers.SIZEOF_SHORT,
+                    elementBuffer.capacity()*Buffers.SIZEOF_INT,
                     elementBuffer,
                     GL_STATIC_DRAW);
   }
@@ -432,7 +432,7 @@ public class VBOPipeline {
     
     // draw!
     gl.glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffers[3]);
-    gl.glDrawElements( GL_TRIANGLES, elementBuffer.capacity(), GL_UNSIGNED_SHORT, 0);
+    gl.glDrawElements( GL_TRIANGLES, elementBuffer.capacity(), GL_UNSIGNED_INT, 0);
     
     // disable arrays once we're done
     gl.glBindBuffer( GL.GL_ARRAY_BUFFER, 0 );

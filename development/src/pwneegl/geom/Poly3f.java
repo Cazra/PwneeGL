@@ -85,9 +85,10 @@ public class Poly3f {
   
   /** Creates the polyhedral from the given set of vertices and faces. */
   public Poly3f(List<Vertex3f> vertices, List<Face3f> faces) {
-    this.vertices = vertices;
-    this.faces = faces;
-    pipeline = new VBOPipeline();
+    this(vertices);
+    for(Face3f face : faces) {
+      addFace(face);
+    }
   }
   
   
@@ -135,14 +136,15 @@ public class Poly3f {
   }
   
   
-  /** Adds a face to this polygon. */
+  /** Adds a face to this polygon, given its vertices in CCW order. */
   public void addFace(int v1, int v2, int v3) {
-    addFace(new Face3f((short) v1, (short) v2, (short) v3));
+    addFace(new Face3f(v1, v2, v3));
   }
   
   /** 
    * Adds 2 faces sharing an edge to this polygon. 
    * Conventient for making quad-like faces. 
+   * Vertices are expected in CCW order.
    */
   public void addFace(int v1, int v2, int v3, int v4) {
     addFace(v1, v2, v3);

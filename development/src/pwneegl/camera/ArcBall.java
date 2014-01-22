@@ -62,25 +62,58 @@ import pwneegl.math.Vector3f;
  * A unit sphere used for camera manipulation. 
  * The arc ball is centered in its parent viewport and has a diameter equal 
  * to the viewport's height.
+ * Unlike a normal camera, the user doesn't specify an eyepoint for the 
+ * arcball camera. Instead, the arcball camera rotates around its look point at
+ * some specified distance away. The arcball rotation can be controlled by 
+ * click-and-drag with the mouse, or it can be controlled programatically.
  */
 public class ArcBall extends Camera3D {
   
   public Component viewport;
   
-  private float startAngleX = 0f;
-  private float startAngleY = 0f;
+  private float lastThetaX = 0f;
+  private float lastThetaY = 0f;
   
-  private float radius;
+  /** Distance from the eye point to the look point. */
+  private float distance;
+  
+  /** Rotation of the eye around the X axis relative to the look point. */
+  private float thetaX;
+  
+  /** Rotation of the eye around the Y axis relative to the look point. */
+  private float thetaY;
   
   public ArcBall(Point3f eye, Point3f look, Component viewport) {
     super(eye);
     setLookPoint(look);
-    radius = getLookVector().length();
+    calibratePolarCoords();
+    this.viewport = viewport;
+  }
+  
+  public ArcBall(Point3f look, float distance, float thetaX, float thetaY, Component viewport) {
+    super(0, 0, 0);
+    setLookPoint(look);
+    setEyeRadialCoords(distance, thetaX, thetaY);
+    calibratePolarCoords();
     this.viewport = viewport;
   }
   
   
-  /** Controls the arcball with mouse input. */
+  /** 
+   * Recalculates the stored polar coordinates for the eye relative to the 
+   * look point, based on their current relative xyz coordinates.
+   */
+  private void calibratePolarCoords() {
+    Vector3f v = getLookVector().negate();
+    float[] rxy = PwneeMath.toRadial(v.getX(), v.getY(), v.getZ());
+    distance = rxy[0];
+    thetaX = rxy[1];
+    thetaY = rxy[2];
+  }
+  
+  
+  
+  /** Controls the arcball camera with mouse input. */
   public void doMouseControl(Mouse mouse) {
     if(isGestureStart(mouse)) {
       beginDrag(mouse.x, mouse.y);
@@ -112,6 +145,7 @@ public class ArcBall extends Camera3D {
   }
   
   
+  //////// Dragging
   
   /** 
    * Converts view coords into radial coords on the surface of the arc ball. 
@@ -134,8 +168,6 @@ public class ArcBall extends Camera3D {
     }
     
     // compute the radial coordinates on the arc ball's virtual unit sphere.
-    
-    
     float angleX = (float) Math.asin(PwneeMath.clamp(v.getY(), -1, 1));
     float angleY = 0f;
     float u = (float) Math.cos(angleX);
@@ -149,26 +181,57 @@ public class ArcBall extends Camera3D {
   /** Begin dragging the arc ball from the specified coordinates.*/
   private void beginDrag(int mouseX, int mouseY) {
     float[] angles = mouse2SphereCoords(mouseX, mouseY);
-    startAngleX = angles[0];
-    startAngleY = angles[1];
+    lastThetaX = angles[0];
+    lastThetaY = angles[1];
   }
   
   /** Drag the arc ball and return the change in the x and y angles. */
   private void drag(int mouseX, int mouseY) {
-    Vector3f look = getLookVector().negate();
-    float[] lookRadial = PwneeMath.toRadial(look.getX(), look.getY(), look.getZ());
-    float angleX = lookRadial[1];
-    float angleY = lookRadial[2];
-    
     float[] arcAngles = mouse2SphereCoords(mouseX, mouseY);
-    float dx = arcAngles[0] - startAngleX;
-    float dy = arcAngles[1] - startAngleY;
+    float dx = arcAngles[0] - lastThetaX;
+    float dy = arcAngles[1] - lastThetaY;
     
-    startAngleX = arcAngles[0];
-    startAngleY = arcAngles[1];
+    lastThetaX = arcAngles[0];
+    lastThetaY = arcAngles[1];
     
-    angleX += dx;
-    angleY += dy;
-    setEyeRadialCoords(radius, angleX, angleY);
+    thetaX += dx;
+    thetaY += dy;
+    
+    thetaX = PwneeMath.clamp(thetaX, -PwneeMath.TAU/4 + 0.01f, PwneeMath.TAU/4 - 0.01f);
+    thetaY = PwneeMath.wrap(thetaY, 0, PwneeMath.TAU);
+    setEyeRadialCoords(distance, thetaX, thetaY);
   }
+  
+  
+  @Override
+  public void setEyePoint(float x, float y, float z) {
+    super.setEyePoint(x, y, z);
+    calibratePolarCoords();
+  }
+  
+  @Override
+  public void setLookPoint(float x, float y, float z) {
+    super.setLookPoint(x, y, z);
+    calibratePolarCoords();
+  }
+  
+  
+  /** 
+   * Moves the eye point so that it is looking towards the look point in the 
+   * direction specified by the angles.
+   */
+  @Override
+  public void lookInDirection(float angleX, float angleY) {
+    setEyeRadialCoords(distance, angleX, angleY);
+    thetaX = angleX;
+    thetaY = angleY;
+  }
+  
+  
+  @Override
+  public void setDistance(float dist) {
+    super.setDistance(dist);
+    distance = dist;
+  }
+  
 }

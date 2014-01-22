@@ -162,9 +162,7 @@ public class Camera3D {
 
   /** Sets the location of the camera's eye. */
   public void setEyePoint(Point3f p) {
-    x = p.getX();
-    y = p.getY();
-    z = p.getZ();
+    setEyePoint(p.getX(), p.getY(), p.getZ());
   }
   
   /** Sets the location of the camera's eye. */
@@ -176,17 +174,17 @@ public class Camera3D {
   
   /** Sets the X coordinate of the camera's eye. */
   public void setEyeX(float x) {
-    this.x = x;
+    setEyePoint(x, y, z);
   }
   
   /** Sets the Y coordinate of the camera's eye. */
   public void setEyeY(float y) {
-    this.y = y;
+    setEyePoint(x, y, z);
   }
   
   /** Sets the Z coordinate of the camera's eye. */
   public void setEyeZ(float z) {
-    this.z = z;
+    setEyePoint(x, y, z);
   }
   
   
@@ -212,9 +210,7 @@ public class Camera3D {
   
   /** Sets the point the camera is looking towards. */
   public void setLookPoint(Point3f p) {
-    lookX = p.getX();
-    lookY = p.getY();
-    lookZ = p.getZ();
+    setLookPoint(p.getX(), p.getY(), p.getZ());
   }
   
   /** Sets the point the camera is looking towards. */
@@ -222,6 +218,21 @@ public class Camera3D {
     lookX = x;
     lookY = y;
     lookZ = z;
+  }
+  
+  /** Sets the X coordinate for the point the camera is looking towards. */
+  public void setLookX(float lookX) {
+    setLookPoint(lookX, lookY, lookZ);
+  }
+  
+  /** Sets the Y coordinate for the point the camera is looking towards. */
+  public void setLookY(float lookY) {
+    setLookPoint(lookX, lookY, lookZ);
+  }
+  
+  /** Sets the Z coordinate for the point the camera is looking towards. */
+  public void setLookZ(float lookZ) {
+    setLookPoint(lookX, lookY, lookZ);
   }
   
   
@@ -328,6 +339,22 @@ public class Camera3D {
     lookX = x + xyz[0];
     lookY = y + xyz[1];
     lookZ = z + xyz[2];
+  }
+  
+  
+  
+  /** Returns the distance of the camera's eye to its look point. */
+  public float getDistance() {
+    return getLookVector().length();
+  }
+  
+  /** Sets the camera's eye to be positioned at the specified distance from its look point*/
+  public void setDistance(float dist) {
+    Vector3f v = getLookVector().negate();
+    float[] rxy = PwneeMath.toRadial(v.getX(), v.getY(), v.getZ());
+    float thetaX = rxy[1];
+    float thetaY = rxy[2];
+    setEyeRadialCoords(dist, thetaX, thetaY);
   }
 }
 

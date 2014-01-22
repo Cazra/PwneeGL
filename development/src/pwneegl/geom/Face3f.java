@@ -59,10 +59,10 @@ public class Face3f {
    * The 3 points comprising this face, given by their vertex array indices in 
    * ccw order.
    */
-  private short v1, v2, v3;
+  private int v1, v2, v3;
   
   /** Constructs the face, given its vertex indices in CCW order. */
-  public Face3f(short v1, short v2, short v3) {
+  public Face3f(int v1, int v2, int v3) {
     this.v1 = v1;
     this.v2 = v2;
     this.v3 = v3;
@@ -109,17 +109,17 @@ public class Face3f {
   }
   
   /** Get the index for the first vertex for this face. */
-  public short getIndex1() {
+  public int getIndex1() {
     return v1;
   }
   
   /** Get the index for the second vertex for this face. */
-  public short getIndex2() {
+  public int getIndex2() {
     return v2;
   }
   
   /** Get the index for the third vertex for this face. */
-  public short getIndex3() {
+  public int getIndex3() {
     return v3;
   }
   
