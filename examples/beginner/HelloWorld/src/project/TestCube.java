@@ -62,7 +62,7 @@ public class TestCube extends Sprite3f {
   
   private static Poly3f getShape() {
     if(shape == null) {
-      shape =  WavefrontIO.readFromResource("d20.obj"); // WavefrontIO.readFromResource("teapot.obj"); // Shapes.makeSphere(20, 20); // Shapes.makeCube(); // Shapes.makeRect(4f, 3f); // Shapes.makeCylinder(20);
+      shape =  Shapes.makeCube(); // WavefrontIO.readFromResource("teapot.obj"); // Shapes.makeSphere(20, 20); // Shapes.makeCube(); // Shapes.makeRect(4f, 3f); // Shapes.makeCylinder(20);
       VertexUtils.genNormalsSphere(shape);
     //  VertexUtils.genTexCoordsSphere(shape);
       

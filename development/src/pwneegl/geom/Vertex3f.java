@@ -278,7 +278,7 @@ public class Vertex3f extends Point3f {
       tangental = new float[] {1,0,0};
     }
     else {
-      tangental = u.scale(tv).sub(v.scale(tu)).scale(dst).getCoords(3);
+      tangental = u.scale(tv).sub(v.scale(tu)).scale(1/dst).getCoords(3);
     }
   }
   
